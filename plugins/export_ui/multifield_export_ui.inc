@@ -37,7 +37,6 @@ function multifield_edit_form(&$form, &$form_state) {
   $form['info']['label']['#title'] = t('Multifield type label');
   $form['info']['machine_name']['#machine_name']['exists'] = 'multifield_field_machine_name_exists';
   $form['info']['machine_name']['#maxlength'] = '32';
-  $form['info']['machine_name']['#description'] .= ' ' . t('You may want to prefix this machine name with <em>field_</em>.');
   $form['info']['machine_name']['#title'] = t('Field type machine name');
   $form['info']['machine_name']['#machine_name']['label'] = t('Field type machine name');
 

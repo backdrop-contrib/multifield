@@ -167,6 +167,10 @@ function multifield_type_cache_clear() {
   field_cache_clear();
 }
 
+function multifield_field_machine_name_exists($name) {
+  return field_info_field_types($name) || multifield_load($name);
+}
+
 /**
  * Implements hook_field_info().
  */
@@ -195,26 +199,6 @@ function multifield_field_widget_info() {
     $info['multifield_default'] = array(
       'label' => t('Default'),
       'field types' => array_keys($multifields),
-    );
-  }
-
-  return $info;
-}
-
-/**
- * Implements hook_field_formatter_view().
- */
-function multifield_field_formatter_info() {
-  $info = array();
-  $multifields = multifield_load_all_enabled();
-
-  if (!empty($multifields)) {
-    $info['multifield_default'] = array(
-      'label' => t('Default'),
-      'field types' => array_keys($multifields),
-      'settings' => array(
-        'view_mode' => 'default',
-      ),
     );
   }
 
@@ -292,6 +276,16 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
   module_invoke_all('field_attach_load', 'multifield', $pseudo_entities, $age, $options);
 }
 
+function multifield_filter_empty_subfields($items, $machine_name) {
+  foreach (multifield_field_get_field_names($machine_name) as $field_name) {
+    if (!empty($items[$field_name])) {
+      $field = field_info_field($field_name);
+      $items = _field_filter_items($subfield, $items);
+    }
+  }
+  return $item;
+}
+
 /**
  * Implements hook_field_validate().
  */
@@ -325,35 +319,20 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
   }
 }
 
-/**
- * Implements hook_field_widget_form().
- */
-function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-
-  $item = isset($items[$delta]) ? $items[$delta] : array();
-
-  $element['#parents'] = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language'], $element['#delta']));
-  $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
-
-  // Rather than calling field_attach_form() here, we have to limit these
-  // sub-field widgets to only one cardinality value. So manually invoke
-  // field_default_form() for each one.
-  foreach (field_info_instances('multifield', $field['type']) as $field_name => $instance) {
-    $subfield = field_info_field($field_name);
-    $subfield['cardinality'] = 1;
-    $subitems = isset($pseudo_entity->{$field_name}[LANGUAGE_NONE]) ? $pseudo_entity->{$field_name}[LANGUAGE_NONE] : array();
-    $element += field_default_form('multifield', $pseudo_entity, $subfield, $instance, $langcode, $subitems, $element, $form_state, 0);
+function multifield_field_attach_submit($entity_type, $entity, $form, $form_state) {
+  list(, , $bundle) = entity_extract_ids($entity_type, $entity);
+  foreach (field_info_instances($entity_type, $bundle) as $field_name => $instance) {
+    $field = field_info_field($field_name);
+    if ($multifield = multifield_load($field['type']) && !empty($entity->{$field_name})) {
+      foreach ($entity->{$field_name} as $langcode => $items) {
+        foreach ($items as $delta => $item) {
+          //$pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+          //field_attach_submit('multifield', $pseudo_entity, $form, $form_state);
+          //$entity->{$field_name}[$langcode][$delta] = $item;
+        }
+      }
+    }
   }
-  //field_attach_form('multifield', $pseudo_entity, $element, $form_state, $langcode);
-
-  // If this multifield itself has a cardinality of one value, and this is not
-  // being used for the field default value form, then set the wrapping element
-  // to be a fieldset for display/grouping purposes.
-  if ($field['cardinality'] == 1 && !empty($element['#entity'])) {
-    $element['#type'] = 'fieldset';
-  }
-
-  return $element;
 }
 
 /**
@@ -373,22 +352,38 @@ function multifield_field_is_empty($item, $field) {
   return !array_filter(array_intersect_key($item, $instances));
 }
 
-function _multifield_field_item_to_entity($machine_name, array &$item) {
-  $seen_ids = &drupal_static(__FUNCTION__, array());
-  do {
-    $id = mt_rand();
-  }
-  while (isset($seen_ids[$id]));
-  $seen_ids[$id] = TRUE;
+/**
+ * Implements hook_field_widget_form().
+ */
+function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
 
-  $entity = new stdClass();
-  $entity->id = $id;
-  $entity->type = $machine_name;
-  foreach ($item as $field => $values) {
-    $entity->{$field} = &$item[$field];
+  $item = isset($items[$delta]) ? $items[$delta] : array();
+
+  $element['#parents'] = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language'], $element['#delta']));
+  $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+
+  // Rather than calling field_attach_form() here, we have to limit these
+  // sub-field widgets to only one cardinality value. So manually invoke
+  // field_default_form() for each one.
+  foreach (field_info_instances('multifield', $field['type']) as $field_name => $instance) {
+    $subfield = field_info_field($field_name);
+    $subfield['cardinality'] = 1;
+    if ($instance['required'] && $delta > 0) {
+      $instance['required'] = 0;
+    }
+    $subitems = isset($pseudo_entity->{$field_name}[LANGUAGE_NONE]) ? $pseudo_entity->{$field_name}[LANGUAGE_NONE] : array();
+    $element += field_default_form('multifield', $pseudo_entity, $subfield, $instance, $langcode, $subitems, $element, $form_state, 0);
+  }
+  //field_attach_form('multifield', $pseudo_entity, $element, $form_state, $langcode);
+
+  // If this multifield itself has a cardinality of one value, and this is not
+  // being used for the field default value form, then set the wrapping element
+  // to be a fieldset for display/grouping purposes.
+  if ($field['cardinality'] == 1 && !empty($element['#entity'])) {
+    $element['#type'] = 'fieldset';
   }
 
-  return $entity;
+  return $element;
 }
 
 function multifield_widget_value($element, $input = FALSE, $form_state) {
@@ -402,30 +397,23 @@ function multifield_widget_value($element, $input = FALSE, $form_state) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for field_ui_field_overview_form().
+ * Implements hook_field_formatter_view().
  */
-function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state) {
-  // Prevent multifields from being added to multifields themselves.
-  if ($form['#entity_type'] == 'multifield') {
-    $form['fields']['_add_new_field']['type']['#options'] = array_diff_key($form['fields']['_add_new_field']['type']['#options'], multifield_load_all());
-    $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_type_get_fields());
-  }
-}
+function multifield_field_formatter_info() {
+  $info = array();
+  $multifields = multifield_load_all_enabled();
 
-/**
- * Implements hook_form_FORM_ID_alter() for field_ui_field_edit_form().
- */
-function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
-  // Show a notice that multifield subfields have a cardinality of one value
-  // enforced in the widget.
-  if ($form['#instance']['entity_type'] == 'multifield') {
-    $form['field']['cardinality']['#disabled'] = TRUE;
-    $form['field']['cardinality']['#field_prefix'] = '<div class="messages warning">' . t('Field cardinality in multifields is limited to one value despite this setting.') . '</div>';
+  if (!empty($multifields)) {
+    $info['multifield_default'] = array(
+      'label' => t('Default'),
+      'field types' => array_keys($multifields),
+      'settings' => array(
+        'view_mode' => 'default',
+      ),
+    );
   }
-}
 
-function multifield_field_machine_name_exists($name) {
-  return field_info_field_types($name) || multifield_load($name);
+  return $info;
 }
 
 /**
@@ -467,6 +455,9 @@ function multifield_field_formatter_settings_summary($field, $instance, $view_mo
   return $summary;
 }
 
+/**
+ * Implements hook_field_formatter_view().
+ */
 function multifield_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
   $settings = $display['settings'];
@@ -476,4 +467,45 @@ function multifield_field_formatter_view($entity_type, $entity, $field, $instanc
   }
 
   return $element;
+}
+
+function _multifield_field_item_to_entity($machine_name, array &$item) {
+  $seen_ids = &drupal_static(__FUNCTION__, array());
+  do {
+    $id = mt_rand();
+  }
+  while (isset($seen_ids[$id]));
+  $seen_ids[$id] = TRUE;
+
+  $entity = new stdClass();
+  $entity->id = $id;
+  $entity->type = $machine_name;
+  foreach ($item as $field => $values) {
+    $entity->{$field} = &$item[$field];
+  }
+
+  return $entity;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for field_ui_field_overview_form().
+ */
+function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state) {
+  // Prevent multifields from being added to multifields themselves.
+  if ($form['#entity_type'] == 'multifield') {
+    $form['fields']['_add_new_field']['type']['#options'] = array_diff_key($form['fields']['_add_new_field']['type']['#options'], multifield_load_all());
+    $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_type_get_fields());
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for field_ui_field_edit_form().
+ */
+function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
+  // Show a notice that multifield subfields have a cardinality of one value
+  // enforced in the widget.
+  if ($form['#instance']['entity_type'] == 'multifield') {
+    $form['field']['cardinality']['#disabled'] = TRUE;
+    $form['field']['cardinality']['#field_prefix'] = '<div class="messages warning">' . t('Field cardinality in multifields is limited to one value despite this setting.') . '</div>';
+  }
 }

@@ -2,4 +2,5 @@ name = Multifield
 description = Provides a combo field type.
 core = 7.x
 dependencies[] = ctools
+configure = admin/structure/multifield
 files[] = plugins/export_ui/multifield_export_ui.class.php
