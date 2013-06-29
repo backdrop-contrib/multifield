@@ -115,7 +115,7 @@ function multifield_type_save($multifield) {
     module_invoke_all('multifield_type_insert');
   }
 
-  field_info_cache_clear();
+  multifield_type_cache_clear();
   return $return;
 }
 
@@ -178,12 +178,14 @@ function multifield_field_info() {
   $info = array();
   $multifields = multifield_load_all_enabled();
   foreach ($multifields as $machine_name => $multifield) {
-    $info[$machine_name] = array(
-      'label' => $multifield->label,
-      'description' => $multifield->description,
-      'default_widget' => 'multifield_default',
-      'default_formatter' => 'multifield_default',
-    );
+    if (multifield_field_get_field_names($machine_name)) {
+      $info[$machine_name] = array(
+        'label' => $multifield->label,
+        'description' => $multifield->description,
+        'default_widget' => 'multifield_default',
+        'default_formatter' => 'multifield_default',
+      );
+    }
   }
   return $info;
 }
