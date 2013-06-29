@@ -202,12 +202,32 @@ function multifield_field_widget_info() {
 }
 
 /**
+ * Implements hook_field_formatter_view().
+ */
+function multifield_field_formatter_info() {
+  $info = array();
+  $multifields = multifield_load_all_enabled();
+
+  if (!empty($multifields)) {
+    $info['multifield_default'] = array(
+      'label' => t('Default'),
+      'field types' => array_keys($multifields),
+      'settings' => array(
+        'view_mode' => 'default',
+      ),
+    );
+  }
+
+  return $info;
+}
+
+/**
  * Implements hook_field_load().
  */
 function multifield_field_load($entity_type, $entities, $field, $instances, $langcode, &$items, $age) {
   foreach (field_info_instances('multifield', $field['type']) as $field_name => $instance) {
-    $field = field_info_field($field_name);
-    foreach (array_keys($field['columns']) as $column) {
+    $subfield = field_info_field($field_name);
+    foreach (array_keys($subfield['columns']) as $column) {
       foreach ($entities as $id => $entity) {
         foreach ($items[$id] as $delta => $item) {
           if (array_key_exists($field_name . '_' . $column, $item)) {
@@ -217,6 +237,24 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
       }
     }
   }
+
+  $pseudo_entities = array();
+  foreach ($entities as $id => $entity) {
+    foreach ($items[$id] as $delta => &$item) {
+      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+      $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
+    }
+  }
+
+  $options = array();
+
+  // Invoke field-type module's hook_field_load().
+  $null = NULL;
+  _field_invoke_multiple('load', 'multifield', $pseudo_entities, $age, $null, $options);
+
+  // Invoke hook_field_attach_load(): let other modules act on loading the
+  // entity.
+  module_invoke_all('field_attach_load', 'multifield', $pseudo_entities, $age, $options);
 }
 
 /**
@@ -224,9 +262,8 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
  */
 function multifield_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
   foreach ($items as $item) {
-    $multifield = multifield_load($field['type']);
-    $psuedo_entity = _multifield_field_item_to_entity($multifield, $item);
-    field_attach_validate('multifield', $psuedo_entity);
+    $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    field_attach_validate('multifield', $pseudo_entity);
   }
 }
 
@@ -234,6 +271,8 @@ function multifield_field_validate($entity_type, $entity, $field, $instance, $la
  * Implements hook_field_presave().
  */
 function multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  // Serialize the multifield values into separate columns for saving into the
+  // field table.
   foreach (field_info_instances('multifield', $field['type']) as $field_name => $instance) {
     $field = field_info_field($field_name);
     foreach ($items as $delta => $item) {
@@ -250,12 +289,11 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
  * Implements hook_field_widget_form().
  */
 function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
-  $multifield = multifield_load($field['type']);
 
   $item = isset($items[$delta]) ? $items[$delta] : array();
 
   $element['#parents'] = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language'], $element['#delta']));
-  $pseudo_entity = _multifield_field_item_to_entity($multifield, $item);
+  $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
 
   // Rather than calling field_attach_form() here, we have to limit these
   // sub-field widgets to only one cardinality value. So manually invoke
@@ -285,23 +323,36 @@ function multifield_field_is_empty($item, $field) {
   //dpm($item, __FUNCTION__);
   //$form = $form_state = array();
   //_field_invoke_default('submit', 'multifield', $entity, $form, $form_state);
+  /*$not_empty = TRUE;
+  foreach (field_info_instances('multifield', $field['type']) as $instance) {
+    $field = field_info_field($instance['field_name']);
+
+    //$multifield = multifield_load($field['type']);
+    dpm($item);
+
+    //_field_filter_items($field, $items) {
+    //field_default_submit($entity_type, $entity, $field, $instance, $langcode, &$items, $form, &$form_state)
+
+  }*/
   return empty($item);
 }
 
-function _multifield_field_item_to_entity($multifield, array $item) {
+function _multifield_field_item_to_entity($machine_name, array &$item) {
+  $seen_ids = &drupal_static(__FUNCTION__, array());
+  do {
+    $id = mt_rand();
+  }
+  while (isset($seen_ids[$id]));
+  $seen_ids[$id] = TRUE;
+
   $entity = new stdClass();
-  $entity->id = 0;
-  $entity->type = $multifield->machine_name;
+  $entity->id = $id;
+  $entity->type = $machine_name;
   foreach ($item as $field => $values) {
-    $entity->{$field} = $values;
+    $entity->{$field} = &$item[$field];
   }
 
   return $entity;
-}
-
-function _multifield_form_attach($multifield, array $item, array &$form, array &$form_state, $langcode) {
-  $entity = _multifield_field_item_to_entity($multifield, $item);
-  field_attach_form('multifield', $entity, $form, $form_state, $langcode);
 }
 
 function multifield_widget_value($element, $input = FALSE, $form_state) {
@@ -339,4 +390,55 @@ function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
 
 function multifield_field_machine_name_exists($name) {
   return field_info_field_types($name) || multifield_load($name);
+}
+
+/**
+ * Implements hook_field_formatter_settings().
+ */
+function multifield_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $entity_info = entity_get_info('multifield');
+  $options = array();
+  foreach ($entity_info['view modes'] as $view_mode_name => $view_mode) {
+    $options[$view_mode_name] = $view_mode['label'];
+  }
+
+  $element['view_mode'] = array(
+    '#type' => 'select',
+    '#title' => t('View mode'),
+    '#options' => array('default' => t('Default')) + $options,
+    '#default_value' => $settings['view_mode'],
+    '#required' => TRUE,
+  );
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function multifield_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $entity_info = entity_get_info('multifield');
+  $view_mode_label = $settings['view_mode'] == 'default' ? t('Default') : $entity_info['view modes'][$settings['view_mode']]['label'];
+
+  $summary = t('View mode: @view-mode', array('@view-mode' => $view_mode_label));
+
+  return $summary;
+}
+
+function multifield_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+
+  foreach ($items as $delta => $item) {
+    $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    $element[$delta] = field_attach_view('multifield', $pseudo_entity, $settings['view_mode'], $langcode);
+  }
+
+  return $element;
 }
