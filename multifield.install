@@ -69,11 +69,11 @@ function multifield_field_schema($field) {
   $schema = array();
 
   if ($field['module'] == 'multifield') {
-    $instances = field_info_instances('multifield', $field['type']);
-    foreach ($instances as $instance) {
-      $sub_field = field_info_field($instance['field_name']);
-      foreach ($sub_field['columns'] as $key => $column) {
-        $schema['columns'][$instance['field_name'] . '_' . $key] = $column;
+    $field_names = db_query("SELECT field_name FROM {field_config_instance} WHERE entity_type = :type AND bundle = :bundle AND deleted = 0", array(':type' => 'multifield', ':bundle' => $field['type']))->fetchCol();
+    $subfields = field_read_fields(array('field_name' => $field_names));
+    foreach ($subfields as $field_name => $subfield) {
+      foreach ($subfield['columns'] as $key => $column) {
+        $schema['columns'][$field_name . '_' . $key] = $column;
       }
     }
   }
