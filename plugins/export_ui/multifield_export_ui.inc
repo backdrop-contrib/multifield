@@ -9,7 +9,7 @@ $plugin = array(
   'menu' => array(
     'menu prefix' => 'admin/structure',
     'menu item' => 'multifield',
-    'menu title' => 'Mulitfield',
+    'menu title' => 'Multifield',
     'menu description' => 'Add, edit, and remove multifields.',
   ),
   'title singular' => t('multifield type'),
