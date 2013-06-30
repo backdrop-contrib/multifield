@@ -28,6 +28,53 @@ function multifield_permission() {
 }
 
 function multifield_menu() {
+  $items['admin/structure/multifield'] = array(
+    'title' => 'Multifield types',
+    'description' => 'Created, edit, and delete multifield field types.',
+    'page callback' => 'multifield_list_page',
+    'access arguments' => array('administer multifield'),
+    'file' => 'multifield.admin.inc',
+  );
+  $items['admin/structure/multifield/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/structure/multifield/add'] = array(
+    'title' => 'Add multifield type',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('multifield_edit_form'),
+    'access arguments' => array('administer multifield'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'multifield.admin.inc',
+  );
+  $items['admin/structure/multifield/manage/%multifield'] = array(
+    'title' => 'Edit multifield type',
+    'title callback' => 'multifield_type_page_title',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('multifield_edit_form', 4),
+    'access arguments' => array('administer multifield'),
+    'file' => 'multifield.admin.inc',
+  );
+  $items['admin/structure/multifield/manage/%multifield/edit'] = array(
+    'title' => 'Edit',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/structure/multifield/manage/%multifield/delete'] = array(
+    'title' => 'Delete',
+    'page arguments' => array('multifield_delete_form', 4),
+    'access arguments' => array('administer multifield'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 100,
+    'file' => 'multifield.admin.inc',
+  );
+
+  return $items;
+}
+
+function multifield_type_page_title($multifield) {
+  return $multifield->label;
 }
 
 /**
@@ -53,8 +100,8 @@ function multifield_entity_info() {
     $info['multifield']['bundles'][$machine_name] = array(
       'label' => $multifield->label,
       'admin' => array(
-        'path' => 'admin/structure/multifield/list/%multifield',
-        'real path' => 'admin/structure/multifield/list/' . $machine_name,
+        'path' => 'admin/structure/multifield/manage/%multifield',
+        'real path' => 'admin/structure/multifield/manage/' . $machine_name,
         'bundle argument' => 4,
         'access arguments' => array('administer multifield'),
       ),
@@ -62,15 +109,6 @@ function multifield_entity_info() {
   }
 
   return $info;
-}
-
-/**
- * Implements hook_ctools_plugin_directory().
- */
-function multifield_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'ctools' && $plugin == 'export_ui') {
-    return 'plugins/' . $plugin;
-  }
 }
 
 function multifield_load($name) {

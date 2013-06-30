@@ -65,6 +65,9 @@ function multifield_schema() {
   return $schema;
 }
 
+/**
+ * Implements hook_field_schema().
+ */
 function multifield_field_schema($field) {
   $schema = array();
 
@@ -79,4 +82,17 @@ function multifield_field_schema($field) {
   }
 
   return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function multifield_uninstall() {
+  drupal_load('module', 'multifield');
+  $multifields = multifield_load_all();
+  foreach (array_keys($multifields) as $machine_name) {
+    field_attach_delete_bundle('multifield', $machine_name);
+  }
+
+
 }
