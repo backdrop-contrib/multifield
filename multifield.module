@@ -36,7 +36,10 @@ function multifield_menu() {
 function multifield_entity_info() {
   $info['multifield'] = array(
     'label' => t('Multifield'),
+    'base table' => 'multifield',
     'fieldable' => TRUE,
+    // Mark this as a configuratoin entity type to prevent other modules from
+    // assuming they can do stuff with this entity type.
     'configuration' => TRUE,
     'bundle keys' => array(
       'bundle' => 'machine_name',
@@ -522,5 +525,19 @@ function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
   if ($form['#instance']['entity_type'] == 'multifield') {
     $form['field']['cardinality']['#disabled'] = TRUE;
     $form['field']['cardinality']['#field_prefix'] = '<div class="messages warning">' . t('Field cardinality in multifields is limited to one value despite this setting.') . '</div>';
+  }
+}
+
+/**
+ * Implements hook_views_data_alter().
+ */
+function multifield_views_data_alter(array &$data) {
+  // Remove any references to the fake multifield table.
+  unset($data['multifield']);
+  unset($data['entity_multifield']);
+  unset($data['views_entity_multifield']);
+  foreach ($data as &$table) {
+    unset($table['table']['join']['multifield']);
+    unset($table['table']['default_relationship']['multifield']);
   }
 }
