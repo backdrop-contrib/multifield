@@ -156,15 +156,16 @@ function multifield_type_delete($multifield) {
   module_invoke_all('multifield_type_delete', $multifield);
 
   db_delete('multifield')
-    ->condition('machine_name', $machine_name);
+    ->condition('machine_name', $machine_name)
+    ->execute();
 
-  field_delete_field($machine_name);
-  field_info_cache_clear();
+  multifield_type_cache_clear();
 }
 
 function multifield_type_cache_clear() {
-  entity_info_cache_clear();
-  field_cache_clear();
+  //entity_info_cache_clear();
+  field_info_cache_clear();
+  //variable_set('menu_rebuild_needed', TRUE);
 }
 
 function multifield_field_machine_name_exists($name) {
