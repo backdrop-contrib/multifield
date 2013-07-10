@@ -107,16 +107,28 @@ function multifield_type_save($multifield) {
   if ($multifield->export_type & EXPORT_IN_DATABASE) {
     // Existing record.
     $return = drupal_write_record('multifield', $multifield, array('machine_name'));
-    module_invoke_all('mulifield_type_update');
+    module_invoke_all('mulifield_type_update', $multifield);
   }
   else {
     $multifield->export_type = EXPORT_IN_DATABASE;
     $return = drupal_write_record('multifield', $multifield, array());
-    module_invoke_all('multifield_type_insert');
+    module_invoke_all('multifield_type_insert', $multifield);
   }
 
   multifield_type_cache_clear();
   return $return;
+}
+
+/**
+ * Implements hook_multifield_type_insert().
+ *
+ * This is horrible hack to fix that users should be redirected to the
+ * 'Manage Fields' tab after creating a new multifield.
+ */
+function multifield_multifield_type_insert($multifield) {
+  if ($_GET['q'] == 'admin/structure/multifield/add') {
+    $_GET['destination'] = 'admin/structure/multifield/list/' . $multifield->machine_name . '/fields';
+  }
 }
 
 function multifield_type_access($op, $multifield) {
