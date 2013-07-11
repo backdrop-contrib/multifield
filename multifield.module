@@ -293,7 +293,7 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
   $pseudo_entities = array();
   foreach ($entities as $id => $entity) {
     foreach ($items[$id] as $delta => &$item) {
-      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, TRUE);
       $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
       $item['#pseudo_entity'] = $pseudo_entity;
     }
@@ -323,9 +323,10 @@ function multifield_filter_empty_subfields($items, $machine_name) {
  * Implements hook_field_validate().
  */
 function multifield_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
-  foreach ($items as $item) {
+  foreach ($items as $delta => $item) {
     $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
     field_attach_validate('multifield', $pseudo_entity);
+    $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 }
 
@@ -334,24 +335,27 @@ function multifield_field_validate($entity_type, $entity, $field, $instance, $la
  */
 function multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   // Run each sub-field through hook_field_presave().
-  foreach ($items as &$item) {
+  foreach ($items as $delta => $item) {
     $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
     field_attach_presave('multifield', $pseudo_entity);
+    $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 
   // Serialize the multifield values into separate columns for saving into the
   // field table.
-  foreach (field_info_instances('multifield', $field['type']) as $field_name => $instance) {
-    $subfield = field_info_field($field_name);
+  foreach (field_info_instances('multifield', $field['type']) as $subfield_name => $subfield_instance) {
+    $subfield = field_info_field($subfield_name);
     foreach ($items as $delta => $item) {
-      if (!empty($item[$field_name][LANGUAGE_NONE])) {
-        foreach ($item[$field_name][LANGUAGE_NONE][0] as $column => $value) {
-          $items[$delta][$field_name . '_' . $column] = $value;
+      if (!empty($item[$subfield_name][LANGUAGE_NONE])) {
+        foreach ($item[$subfield_name][LANGUAGE_NONE][0] as $column => $value) {
+          if (isset($subfield['columns'][$column])) {
+            $items[$delta][$subfield_name . '_' . $column] = $value;
+          }
         }
       }
       else {
         foreach ($subfield['columns'] as $column => $details) {
-          $items[$delta][$field_name . '_' . $column] = isset($details['default']) ? $details['default'] : NULL;
+          $items[$delta][$subfield_name . '_' . $column] = isset($details['default']) ? $details['default'] : NULL;
         }
       }
     }
@@ -363,11 +367,12 @@ function multifield_field_attach_submit($entity_type, $entity, $form, $form_stat
   foreach (field_info_instances($entity_type, $bundle) as $field_name => $instance) {
     $field = field_info_field($field_name);
     if ($multifield = multifield_load($field['type']) && !empty($entity->{$field_name})) {
-      foreach ($entity->{$field_name} as $langcode => $items) {
+      foreach ($entity->{$field_name} as $langcode => &$items) {
         foreach ($items as $delta => $item) {
-          //$pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+          $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
           //field_attach_submit('multifield', $pseudo_entity, $form, $form_state);
-          //$entity->{$field_name}[$langcode][$delta] = $item;
+          _field_invoke_default('submit', 'multifield', $pseudo_entity, $form, $form_state);
+          $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
         }
       }
     }
@@ -398,6 +403,8 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
   $item = isset($items[$delta]) ? $items[$delta] : array();
 
   $element['#parents'] = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language'], $element['#delta']));
+
+  // @todo Can't we rely on $item['#pseudo_entity'] here?
   $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
 
   // Rather than calling field_attach_form() here, we have to limit these
@@ -649,10 +656,15 @@ function multifield_field_prepare_view($entity_type, $entities, $field, $instanc
   foreach ($entities as $id => $entity) {
     foreach ($items[$id] as $delta => &$item) {
       $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+      $pseudo_entity->delta = $delta;
+      $pseudo_entity->parent_id = $id;
       $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
     }
   }
   field_attach_prepare_view('multifield', $pseudo_entities, NULL, $langcode);
+  foreach ($pseudo_entities as $pseudo_entity) {
+    $items[$pseudo_entity->parent_id][$pseudo_entity->delta] = _multifield_field_entity_to_item($pseudo_entity);
+  }
 }
 
 /**
@@ -669,7 +681,7 @@ function multifield_field_formatter_view($entity_type, $entity, $field, $instanc
   return $element;
 }
 
-function _multifield_field_item_to_entity($machine_name, array &$item) {
+function _multifield_field_item_to_entity($machine_name, array &$item, $reference = FALSE) {
   $seen_ids = &drupal_static(__FUNCTION__, array());
   do {
     $id = mt_rand();
@@ -681,10 +693,22 @@ function _multifield_field_item_to_entity($machine_name, array &$item) {
   $entity->id = $id;
   $entity->type = $machine_name;
   foreach ($item as $field => $values) {
-    $entity->{$field} = &$item[$field];
+    if ($reference) {
+      $entity->{$field} = &$item[$field];
+    }
+    else {
+      $entity->{$field} = $item[$field];
+    }
   }
 
   return $entity;
+}
+
+function _multifield_field_entity_to_item($pseudo_entity) {
+  $item = (array) $pseudo_entity;
+  $item = array_intersect_key($item, field_info_instances('multifield', $pseudo_entity->type));
+  $item['#pseudo_entity'] = $pseudo_entity;
+  return $item;
 }
 
 /**
