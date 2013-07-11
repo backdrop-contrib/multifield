@@ -331,6 +331,12 @@ function multifield_field_validate($entity_type, $entity, $field, $instance, $la
  * Implements hook_field_presave().
  */
 function multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  // Run each sub-field through hook_field_presave().
+  foreach ($items as &$item) {
+    $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    field_attach_presave('multifield', $pseudo_entity);
+  }
+
   // Serialize the multifield values into separate columns for saving into the
   // field table.
   foreach (field_info_instances('multifield', $field['type']) as $field_name => $instance) {
