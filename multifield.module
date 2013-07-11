@@ -640,6 +640,20 @@ function multifield_field_formatter_settings_summary($field, $instance, $view_mo
 }
 
 /**
+ * Implements hook_field_prepare_view().
+ */
+function multifield_field_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items) {
+  $pseudo_entities = array();
+  foreach ($entities as $id => $entity) {
+    foreach ($items[$id] as $delta => &$item) {
+      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+      $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
+    }
+  }
+  field_attach_prepare_view('multifield', $pseudo_entities, NULL, $langcode);
+}
+
+/**
  * Implements hook_field_formatter_view().
  */
 function multifield_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
