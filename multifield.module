@@ -129,6 +129,7 @@ function multifield_type_save($multifield) {
     $multifield->export_type = EXPORT_IN_DATABASE;
     $return = drupal_write_record('multifield', $multifield, array());
     module_invoke_all('multifield_type_insert', $multifield);
+    field_attach_create_bundle('multifield', $multifield->machine_name);
   }
 
   multifield_type_cache_clear();
@@ -187,6 +188,7 @@ function multifield_type_delete($multifield) {
     ->condition('machine_name', $machine_name)
     ->execute();
 
+  field_attach_delete_bundle('multifield', $machine_name);
   multifield_type_cache_clear();
 }
 
