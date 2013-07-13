@@ -229,26 +229,6 @@ function multifield_field_get_field_names($machine_name = NULL) {
   }
 }
 
-/*function multifield_filter_empty_subfields($items, $machine_name) {
-  foreach (multifield_field_get_field_names($machine_name) as $field_name) {
-    if (!empty($items[$field_name])) {
-      $field = field_info_field($field_name);
-      $items = _field_filter_items($subfield, $items);
-    }
-  }
-  return $item;
-}
-
-function multifield_widget_value($element, $input = FALSE, $form_state) {
-  //dpm($element);
-  //dpm($input);
-  //dpm($form_state);
-  if ($input) {
-  }
-
-  return array();
-}*/
-
 function _multifield_field_item_to_entity($machine_name, array $item) {
   $pseudo_entity = new stdClass();
   $pseudo_entity->id = _multifield_generate_unique_id();
