@@ -205,7 +205,7 @@ function multifield_field_machine_name_exists($name) {
   return field_info_field_types($name) || multifield_load($name);
 }
 
-function multifield_field_get_field_names($machine_name = NULL) {
+function multifield_get_subfields($machine_name = NULL) {
   $fields = &drupal_static(__FUNCTION__);
 
   if (!isset($fields)) {
@@ -258,7 +258,7 @@ function _multifield_field_entity_to_item($pseudo_entity) {
 }
 
 function multifield_item_unserialize(&$item, $delta, $multifield) {
-  foreach (multifield_field_get_field_names($multifield['type']) as $subfield_name) {
+  foreach (multifield_get_subfields($multifield['type']) as $subfield_name) {
     $subfield = field_info_field($subfield_name);
     foreach (array_keys($subfield['columns']) as $column) {
       if (array_key_exists($subfield_name . '_' . $column, $item)) {

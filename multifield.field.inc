@@ -7,7 +7,8 @@ function multifield_field_info() {
   $info = array();
   $multifields = multifield_load_all_enabled();
   foreach ($multifields as $machine_name => $multifield) {
-    if (multifield_field_get_field_names($machine_name)) {
+    // Only show this multifield as an option to create if it has subfields.
+    if (multifield_get_subfields($machine_name)) {
       $info[$machine_name] = array(
         'label' => $multifield->label,
         'description' => $multifield->description,
@@ -23,7 +24,7 @@ function multifield_field_info() {
  * Implements hook_field_load().
  */
 function multifield_field_load($entity_type, $entities, $field, $instances, $langcode, &$items, $age) {
-  foreach (multifield_field_get_field_names($field['type']) as $field_name) {
+  foreach (multifield_get_subfields($field['type']) as $field_name) {
     $subfield = field_info_field($field_name);
     foreach (array_keys($subfield['columns']) as $column) {
       foreach ($entities as $id => $entity) {
@@ -65,6 +66,41 @@ function _multifield_field_attach_load($entity_type, $entities, $age = FIELD_LOA
   // Invoke hook_field_attach_load(): let other modules act on loading the
   // entity.
   module_invoke_all('field_attach_load', $entity_type, $entities, $age, $options);
+}
+
+/**
+ * Implements hook_field_access().
+ *
+ * @todo Investigate improving performance of this function.
+ */
+function multifield_field_access($op, $field, $entity_type, $entity, $account) {
+  // We should return FALSE if all the subfields' field_access() checks all
+  // return FALSE.
+  if (in_array($field['field_name'], multifield_type_get_fields())) {
+    $subfield_names = multifield_get_subfields($field['type']);
+    $subfield_access = array();
+
+    if (!empty($entity) && $items = field_get_items($entity_type, $entity, $field['field_name'])) {
+      foreach ($items as $delta => $item) {
+        $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+        foreach ($subfield_names as $subfield_name) {
+          $subfield = field_info_field($subfield_name);
+          $subfield_access[$subfield_name . ':' . $delta] = field_access($op, $subfield, 'multifield', $pseudo_entity, $account);
+        }
+      }
+    }
+    else {
+      foreach ($subfield_names as $subfield_name) {
+        $subfield = field_info_field($subfield_name);
+        $subfield_access[$subfield_name] = field_access($op, $subfield, 'multifield', NULL, $account);
+      }
+    }
+
+    // If all of the subfields returned FALSE, then this should return FALSE.
+    if (!array_filter($subfield_access)) {
+      return FALSE;
+    }
+  }
 }
 
 /**
