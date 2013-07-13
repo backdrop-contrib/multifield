@@ -521,19 +521,35 @@ function multifield_field_formatter_settings_summary($field, $instance, $view_mo
  * Implements hook_field_prepare_view().
  */
 function multifield_field_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items) {
-  $pseudo_entities = array();
+  // Need to get what view mode is being used to render this multifield.
+  $view_mode = NULL;
+  $backtrace = debug_backtrace();
+  // @todo Figure out how to make this check less brittle, such as cases with field_view_field().
+  if ($backtrace[2]['function'] !== 'field_attach_prepare_view') {
+    throw new Exception("Unable to determine the view mode being used to render the parent entity of the multifield.");
+  }
+  $parent_view_mode = $backtrace[2]['args'][2];
+
+  $view_mode_pseudo_entities = array();
+
   foreach ($entities as $id => $entity) {
-    foreach ($items[$id] as $delta => &$item) {
+    $display = field_get_display($instances[$id], $parent_view_mode, $entity);
+    $view_mode = $display['settings']['view_mode'];
+
+    foreach ($items[$id] as $delta => $item) {
       $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
       $pseudo_entity->delta = $delta;
       $pseudo_entity->parent_id = $id;
-      $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
+      $view_mode_pseudo_entities[$view_mode][$pseudo_entity->id] = $pseudo_entity;
     }
   }
-  field_attach_prepare_view('multifield', $pseudo_entities, NULL, $langcode);
-  foreach ($pseudo_entities as $pseudo_entity) {
-    $items[$pseudo_entity->parent_id][$pseudo_entity->delta] = _multifield_field_entity_to_item($pseudo_entity);
-    $items[$pseudo_entity->parent_id][$pseudo_entity->delta]['#pseudo_entity'] = $pseudo_entity;
+
+  foreach ($view_mode_pseudo_entities as $view_mode => $pseudo_entities) {
+    field_attach_prepare_view('multifield', $pseudo_entities, $view_mode, $langcode);
+    foreach ($pseudo_entities as $pseudo_entity) {
+      $items[$pseudo_entity->parent_id][$pseudo_entity->delta] = _multifield_field_entity_to_item($pseudo_entity);
+      $items[$pseudo_entity->parent_id][$pseudo_entity->delta]['#pseudo_entity'] = $pseudo_entity;
+    }
   }
 }
 
