@@ -73,6 +73,11 @@ function multifield_field_schema($field) {
     $subfields = field_read_fields(array('field_name' => $field_names));
     foreach ($subfields as $field_name => $subfield) {
       foreach ($subfield['columns'] as $key => $column) {
+        // We need to ensure that subfields can always be saved with NULL
+        // values.
+        if (!empty($column['not null'])) {
+          $column['not null'] = FALSE;
+        }
         $schema['columns'][$field_name . '_' . $key] = $column;
       }
     }
