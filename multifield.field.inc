@@ -46,7 +46,7 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
   $pseudo_entities = array();
   foreach ($entities as $id => $entity) {
     foreach ($items[$id] as $delta => &$item) {
-      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, TRUE);
       $pseudo_entity->delta = $delta;
       $pseudo_entity->parent_id = $id;
       $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
@@ -573,7 +573,7 @@ function multifield_field_prepare_view($entity_type, $entities, $field, $instanc
     $view_mode = $display['settings']['view_mode'];
 
     foreach ($items[$id] as $delta => $item) {
-      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, TRUE);
       $pseudo_entity->delta = $delta;
       $pseudo_entity->parent_id = $id;
       $view_mode_pseudo_entities[$view_mode][$pseudo_entity->id] = $pseudo_entity;
@@ -584,6 +584,7 @@ function multifield_field_prepare_view($entity_type, $entities, $field, $instanc
     field_attach_prepare_view('multifield', $pseudo_entities, $view_mode, $langcode);
     foreach ($pseudo_entities as $pseudo_entity) {
       $items[$pseudo_entity->parent_id][$pseudo_entity->delta] = _multifield_field_entity_to_item($pseudo_entity);
+      $pseudo_entity->id = NULL;
       $items[$pseudo_entity->parent_id][$pseudo_entity->delta]['#pseudo_entity'] = $pseudo_entity;
     }
   }

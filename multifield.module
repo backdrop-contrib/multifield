@@ -229,9 +229,9 @@ function multifield_get_subfields($machine_name = NULL) {
   }
 }
 
-function _multifield_field_item_to_entity($machine_name, array $item) {
+function _multifield_field_item_to_entity($machine_name, array $item, $generate_id = FALSE) {
   $pseudo_entity = new stdClass();
-  $pseudo_entity->id = _multifield_generate_unique_id();
+  $pseudo_entity->id = $generate_id ? _multifield_generate_unique_id() : NULL;
   $pseudo_entity->type = $machine_name;
   foreach ($item as $field => $values) {
     $pseudo_entity->{$field} = $item[$field];
