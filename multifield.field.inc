@@ -556,27 +556,35 @@ function multifield_field_formatter_settings_summary($field, $instance, $view_mo
 /**
  * Implements hook_field_prepare_view().
  */
-function multifield_field_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items) {
-  // Need to get what view mode is being used to render this multifield.
-  $view_mode = NULL;
-  $backtrace = debug_backtrace();
-  // @todo Figure out how to make this check less brittle, such as cases with field_view_field().
-  if ($backtrace[2]['function'] !== 'field_attach_prepare_view') {
-    throw new Exception("Unable to determine the view mode being used to render the parent entity of the multifield.");
+function multifield_field_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items, $display = NULL) {
+  // When this hook is invoked using field_attach_prepare_view(), the view mode
+  // being used to render the entities is not passed through here. So we need
+  // a hack to retrieve it. When this hook is invoked using field_view_field(),
+  // the display settings are passed into the last parameter.
+  if (!isset($display)) {
+    $backtrace = debug_backtrace();
+    foreach ($backtrace as $caller) {
+      if ($caller['function'] == 'field_attach_prepare_view') {
+        $display = $caller['args'][2];
+      }
+    }
+    if (!isset($display)) {
+      throw new Exception("Unable to determine the view mode being used to render the parent entity of the multifield.");
+    }
   }
-  $parent_view_mode = $backtrace[2]['args'][2];
 
   $view_mode_pseudo_entities = array();
 
   foreach ($entities as $id => $entity) {
-    $display = field_get_display($instances[$id], $parent_view_mode, $entity);
-    $view_mode = $display['settings']['view_mode'];
-
-    foreach ($items[$id] as $delta => $item) {
-      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, TRUE);
-      $pseudo_entity->delta = $delta;
-      $pseudo_entity->parent_id = $id;
-      $view_mode_pseudo_entities[$view_mode][$pseudo_entity->id] = $pseudo_entity;
+    $instance_display = is_array($display) ? $display : field_get_display($instances[$id], $display, $entity);
+    if (!$instance_display['type'] !== 'hidden') {
+      $view_mode = !empty($display['settings']['view_mode']) ? $display['settings']['view_mode'] : 'default';
+      foreach ($items[$id] as $delta => $item) {
+        $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, TRUE);
+        $pseudo_entity->delta = $delta;
+        $pseudo_entity->parent_id = $id;
+        $view_mode_pseudo_entities[$view_mode][$pseudo_entity->id] = $pseudo_entity;
+      }
     }
   }
 
