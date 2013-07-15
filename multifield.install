@@ -68,20 +68,27 @@ function multifield_schema() {
 function multifield_field_schema($field) {
   $schema = array();
 
-  if ($field['module'] == 'multifield') {
-    $field_names = db_query("SELECT field_name FROM {field_config_instance} WHERE entity_type = :type AND bundle = :bundle AND deleted = 0", array(':type' => 'multifield', ':bundle' => $field['type']))->fetchCol();
-    $subfields = field_read_fields(array('field_name' => $field_names));
-    foreach ($subfields as $field_name => $subfield) {
-      foreach ($subfield['columns'] as $key => $column) {
-        // We need to ensure that subfields can always be saved with NULL
-        // values.
-        if (!empty($column['not null'])) {
-          $column['not null'] = FALSE;
-        }
-        $schema['columns'][$field_name . '_' . $key] = $column;
+  $field_names = db_query("SELECT field_name FROM {field_config_instance} WHERE entity_type = :type AND bundle = :bundle AND deleted = 0", array(':type' => 'multifield', ':bundle' => $field['type']))->fetchCol();
+  $subfields = field_read_fields(array('field_name' => $field_names));
+  foreach ($subfields as $field_name => $subfield) {
+    foreach ($subfield['columns'] as $key => $column) {
+      // We need to ensure that subfields can always be saved with NULL
+      // values.
+      if (!empty($column['not null'])) {
+        $column['not null'] = FALSE;
       }
+      $schema['columns'][$field_name . '_' . $key] = $column;
     }
+    // @todo Add support for indexes and foreign keys.
   }
+
+  // Add a unique ID column.
+  $schema['columns']['id'] = array(
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  );
+  $schema['indexes']['id'] = array('id');
 
   return $schema;
 }

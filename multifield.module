@@ -229,30 +229,23 @@ function multifield_get_subfields($machine_name = NULL) {
   }
 }
 
-function _multifield_field_item_to_entity($machine_name, array $item, $generate_id = FALSE) {
+function _multifield_field_item_to_entity($machine_name, array $item, array $additional = array()) {
   $pseudo_entity = new stdClass();
-  $pseudo_entity->id = $generate_id ? _multifield_generate_unique_id() : NULL;
+  $pseudo_entity->id = !empty($item['id']) ? $item['id'] : NULL;
   $pseudo_entity->type = $machine_name;
-  foreach ($item as $field => $values) {
+  foreach (array_intersect_key($item, field_info_instances('multifield', $machine_name)) as $field => $values) {
     $pseudo_entity->{$field} = $item[$field];
   }
-  return $pseudo_entity;
-}
-
-function _multifield_generate_unique_id() {
-  $seen_ids = &drupal_static(__FUNCTION__, array());
-  do {
-    $id = mt_rand();
+  foreach ($additional as $key => $value) {
+    $pseudo_entity->{$key} = $value;
   }
-  while (isset($seen_ids[$id]));
-  $seen_ids[$id] = TRUE;
-
-  return $id;
+  return $pseudo_entity;
 }
 
 function _multifield_field_entity_to_item($pseudo_entity) {
   $item = (array) $pseudo_entity;
   $item = array_intersect_key($item, field_info_instances('multifield', $pseudo_entity->type));
+  $item['id'] = $pseudo_entity->id;
   //$item['#pseudo_entity'] = $pseudo_entity;
   return $item;
 }
@@ -288,6 +281,40 @@ function multifield_item_serialize(&$item, $delta, $multifield) {
     }
     //unset($item[$subfield_name]);
   }
+}
+
+function multifield_get_next_id() {
+  $id = &drupal_static(__FUNCTION__);
+  if (!isset($id)) {
+    $id = variable_get('multifield_max_id', 0);
+  }
+  return ++$id;
+}
+
+function multifield_update_maximum_id(array $items) {
+  if (!empty($items)) {
+    $ids = array();
+    foreach ($items as $item) {
+      $ids[] = $item['id'];
+    }
+    $largest_id = max($ids);
+    if ($largest_id > variable_get('multifield_max_id', 0)) {
+      variable_set('multifield_max_id', $largest_id);
+      drupal_static_reset('multifield_get_next_id');
+    }
+  }
+}
+
+// @todo Remove this function?
+function _multifield_generate_unique_id() {
+  $seen_ids = &drupal_static(__FUNCTION__, array());
+  do {
+    $id = mt_rand();
+  }
+  while (isset($seen_ids[$id]));
+  $seen_ids[$id] = TRUE;
+
+  return $id;
 }
 
 /**

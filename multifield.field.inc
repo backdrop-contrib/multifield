@@ -46,9 +46,7 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
   $pseudo_entities = array();
   foreach ($entities as $id => $entity) {
     foreach ($items[$id] as $delta => &$item) {
-      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, TRUE);
-      $pseudo_entity->delta = $delta;
-      $pseudo_entity->parent_id = $id;
+      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, array('delta' => $delta, 'parent_id' => $id));
       $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
     }
   }
@@ -146,6 +144,9 @@ function _multifield_field_attach_form_validate($entity_type, $entity) {
 function multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   // Run each sub-field through hook_field_presave().
   foreach ($items as $delta => $item) {
+    if (empty($item['id'])) {
+      $item['id'] = multifield_get_next_id();
+    }
     $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
     // field_attach_presave() is safe to call directly, yay!
     field_attach_presave('multifield', $pseudo_entity);
@@ -217,6 +218,8 @@ function multifield_field_insert($entity_type, $entity, $field, $instance, $lang
   // Because this is invoked right prior to field storage writing, we need to
   // re-serialize the field values.
   array_walk($items, 'multifield_item_serialize', $field);
+
+  multifield_update_maximum_id($items);
 }
 
 function _multifield_field_attach_insert($entity_type, $entity) {
@@ -251,6 +254,8 @@ function multifield_field_update($entity_type, $entity, $field, $instance, $lang
   // Because this is invoked right prior to field storage writing, we need to
   // re-serialize the field values.
   array_walk($items, 'multifield_item_serialize', $field);
+
+  multifield_update_maximum_id($items);
 }
 
 function _multifield_field_attach_update($entity_type, $entity) {
@@ -312,7 +317,9 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
 
   $element['#parents'] = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language'], $element['#delta']));
 
-  $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+  // Force the ID of the pseudo entity to be NULL, to prevent modules like
+  // entity reference from trying to use it.
+  $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, array('id' => NULL));
 
   // Rather than calling field_attach_form() here, we have to limit these
   // sub-field widgets to only one cardinality value. So manually invoke
@@ -334,6 +341,11 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
   if ($field['cardinality'] == 1 && !empty($element['#entity'])) {
     $element['#type'] = 'fieldset';
   }
+
+  $element['id'] = array(
+    '#type' => 'value',
+    '#value' => !empty($item['id']) ? $item['id'] : NULL,
+  );
 
   $element['actions'] = array(
     '#type' => 'actions',
@@ -580,9 +592,7 @@ function multifield_field_prepare_view($entity_type, $entities, $field, $instanc
     if (!$instance_display['type'] !== 'hidden') {
       $view_mode = !empty($display['settings']['view_mode']) ? $display['settings']['view_mode'] : 'default';
       foreach ($items[$id] as $delta => $item) {
-        $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, TRUE);
-        $pseudo_entity->delta = $delta;
-        $pseudo_entity->parent_id = $id;
+        $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item, array('delta' => $delta, 'parent_id' => $id));
         $view_mode_pseudo_entities[$view_mode][$pseudo_entity->id] = $pseudo_entity;
       }
     }
