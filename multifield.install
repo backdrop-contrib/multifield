@@ -65,12 +65,16 @@ function multifield_schema() {
   return $schema;
 }
 
+/**
+ * Implements hook_field_schema().
+ */
 function multifield_field_schema($field) {
   $schema = array();
 
   $field_names = db_query("SELECT field_name FROM {field_config_instance} WHERE entity_type = :type AND bundle = :bundle AND deleted = 0", array(':type' => 'multifield', ':bundle' => $field['type']))->fetchCol();
   $subfields = field_read_fields(array('field_name' => $field_names));
   foreach ($subfields as $field_name => $subfield) {
+    // Translate the subfield columns to the multifield.
     foreach ($subfield['columns'] as $key => $column) {
       // We need to ensure that subfields can always be saved with NULL
       // values.
@@ -79,7 +83,31 @@ function multifield_field_schema($field) {
       }
       $schema['columns'][$field_name . '_' . $key] = $column;
     }
-    // @todo Add support for indexes and foreign keys.
+
+    // Translate the subfield indexes to the multifield.
+    foreach ($subfield['indexes'] as $index_name => $index_fields) {
+      $index_name = $field_name . '_' . $index_name;
+      foreach ($index_fields as $index_field) {
+        // Indexes are arrays of column name strings and/or an array in the
+        // format of array(column-name, bytes-to-index), so we need to handle
+        // both formats.
+        if (is_array($index_field)) {
+          $schema['indexes'][$index_name][] = array($field_name . '_' . $index_field[0], $index_field[1]);
+        }
+        else {
+          $schema['indexes'][$index_name][] = $field_name . '_' . $index_field;
+        }
+      }
+    }
+
+    // Translate the subfield foreign keys to the multifield.
+    foreach ($subfield['foreign keys'] as $foreign_key_name => $foreign_key) {
+      foreach ($foreign_key['columns'] as $key => $value) {
+        unset($foreign_key['columns'][$key]);
+        $foreign_key['columns'][$field_name . '_' . $key] = $value;
+      }
+      $schema['foreign keys'][$field_name . '_' . $foreign_key_name] = $foreign_key;
+    }
   }
 
   // Add a unique ID column.
