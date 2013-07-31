@@ -91,6 +91,7 @@ function multifield_page_title($multifield) {
 function multifield_entity_info() {
   $info['multifield'] = array(
     'label' => t('Multifield'),
+    'controller class' => 'MultifieldEntityController',
     'base table' => 'multifield',
     'fieldable' => TRUE,
     // Mark this as a configuratoin entity type to prevent other modules from

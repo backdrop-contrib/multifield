@@ -169,4 +169,22 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
     $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
     $this->assertIdentical($schema, array());
   }
+
+  public function testEntityLoad() {
+    try {
+      entity_load('multifield', FALSE, array('type' => 'test'));
+      $this->fail("Cannot run entity_load('multifield') with conditions.");
+    }
+    catch (InvalidArgumentException $e) {
+      $this->pass("Cannot run entity_load('multifield') with conditions.");
+    }
+
+    $results = entity_load('multifield', FALSE);
+    $this->assertIdentical($results, array());
+
+    $results = entity_load('multifield', array(1));
+    $this->assertIdentical($results, array());
+
+    // @todo Expand this coverage to actually load real multifield entities.
+  }
 }

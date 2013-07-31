@@ -71,6 +71,10 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
     }
   }
   _multifield_field_attach_load('multifield', $pseudo_entities, $age);
+
+  // Store the loaded multifield entities in the entity cache.
+  entity_get_controller('multifield')->cacheSet($pseudo_entities);
+
   foreach ($pseudo_entities as $pseudo_entity) {
     $items[$pseudo_entity->parent_id][$pseudo_entity->delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
@@ -299,11 +303,15 @@ function _multifield_field_attach_update($entity_type, $entity) {
  */
 function multifield_field_delete($entity_type, $entity, $field, $instance, $langcode, &$items) {
   // Run each sub-field through hook_field_delete().
+  $ids = array();
   foreach ($items as $delta => $item) {
     $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    $ids[] = $pseudo_entity->id;
     _multifield_field_attach_delete('multifield', $pseudo_entity);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
+
+  entity_get_controller('multifield')->resetCache($ids);
 }
 
 function _multifield_field_attach_delete($entity_type, $entity) {
