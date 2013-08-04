@@ -326,6 +326,20 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
     $form['fields']['_add_new_field']['type']['#options'] = array_diff_key($form['fields']['_add_new_field']['type']['#options'], multifield_load_all());
     $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_type_get_fields());
   }
+
+  // Prevent changes being made if this multifield type has instances.
+  $multifield = multifield_load($form['#bundle']);
+  if (multifield_type_get_fields($multifield)) {
+    drupal_set_message(t('The fields for this multifield cannot be changed since it has instances.'), 'warning');
+    $form['fields']['_add_new_field']['#access'] = FALSE;
+    $form['fields']['_add_existing_field']['#access'] = FALSE;
+    unset($form['fields']['#regions']['add_new']);
+    foreach ($form['#fields'] as $field_name) {
+      $form['fields'][$field_name]['edit'] = array('#markup' => t('Locked'));
+      $form['fields'][$field_name]['delete'] = array();
+      $form['fields'][$field_name]['#attributes']['class'][] = 'menu-disabled';
+    }
+  }
 }
 
 /**
