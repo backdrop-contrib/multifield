@@ -329,7 +329,7 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
 
   // Prevent changes being made if this multifield type has instances.
   $multifield = multifield_load($form['#bundle']);
-  if (multifield_type_get_fields($multifield)) {
+  if (!empty($multifield) && multifield_type_get_fields($multifield)) {
     drupal_set_message(t('The fields for this multifield cannot be changed since it has instances.'), 'warning');
     $form['fields']['_add_new_field']['#access'] = FALSE;
     $form['fields']['_add_existing_field']['#access'] = FALSE;
