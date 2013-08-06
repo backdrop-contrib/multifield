@@ -72,6 +72,10 @@ function multifield_field_schema($field) {
   $schema = array();
 
   $field_names = db_query("SELECT field_name FROM {field_config_instance} WHERE entity_type = :type AND bundle = :bundle AND deleted = 0", array(':type' => 'multifield', ':bundle' => $field['type']))->fetchCol();
+  if (empty($field_names)) {
+    return $schema;
+  }
+
   $subfields = field_read_fields(array('field_name' => $field_names));
   foreach ($subfields as $field_name => $subfield) {
     // Translate the subfield columns to the multifield.
