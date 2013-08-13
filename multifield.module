@@ -175,6 +175,17 @@ function multifield_type_get_fields($multifield = NULL) {
   return $fields;
 }
 
+function multifield_type_has_instances($machine_name) {
+  $map = field_info_field_map();
+  foreach ($map as $field_name => $field) {
+    if ($field['type'] == $machine_name) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
 function multifield_delete($name) {
   if ($multifield = multifield_load($name)) {
     ctools_include('export');
@@ -321,15 +332,16 @@ function _multifield_generate_unique_id() {
  * Implements hook_form_FORM_ID_alter() for field_ui_field_overview_form().
  */
 function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state) {
-  // Prevent multifields from being added to multifields themselves.
   if ($form['#entity_type'] == 'multifield') {
-    $form['fields']['_add_new_field']['type']['#options'] = array_diff_key($form['fields']['_add_new_field']['type']['#options'], multifield_load_all());
-    $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_type_get_fields());
+    return;
   }
 
+  // Prevent multifields from being added to multifields themselves.
+  $form['fields']['_add_new_field']['type']['#options'] = array_diff_key($form['fields']['_add_new_field']['type']['#options'], multifield_load_all());
+  $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_type_get_fields());
+
   // Prevent changes being made if this multifield type has instances.
-  $multifield = multifield_load($form['#bundle']);
-  if (!empty($multifield) && multifield_type_get_fields($multifield)) {
+  if (multifield_type_has_instances($form['#bundle'])) {
     drupal_set_message(t('The fields for this multifield cannot be changed since it has instances.'), 'warning');
     $form['fields']['_add_new_field']['#access'] = FALSE;
     $form['fields']['_add_existing_field']['#access'] = FALSE;
