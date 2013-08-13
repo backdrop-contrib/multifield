@@ -347,9 +347,9 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
     $form['fields']['_add_existing_field']['#access'] = FALSE;
     unset($form['fields']['#regions']['add_new']);
     foreach ($form['#fields'] as $field_name) {
-      $form['fields'][$field_name]['edit'] = array('#markup' => t('Locked'));
+      //$form['fields'][$field_name]['edit'] = array('#markup' => t('Locked'));
       $form['fields'][$field_name]['delete'] = array();
-      $form['fields'][$field_name]['#attributes']['class'][] = 'menu-disabled';
+      //$form['fields'][$field_name]['#attributes']['class'][] = 'menu-disabled';
     }
   }
 }
@@ -358,11 +358,59 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
  * Implements hook_form_FORM_ID_alter() for field_ui_field_edit_form().
  */
 function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
+  if ($form['#instance']['entity_type'] != 'multifield') {
+    return;
+  }
+
   // Show a notice that multifield subfields have a cardinality of one value
   // enforced in the widget.
-  if ($form['#instance']['entity_type'] == 'multifield') {
-    $form['field']['cardinality']['#disabled'] = TRUE;
-    $form['field']['cardinality']['#field_prefix'] = '<div class="messages warning">' . t('Field cardinality in multifields is limited to one value despite this setting.') . '</div>';
+  $form['field']['cardinality']['#disabled'] = TRUE;
+  $form['field']['cardinality']['#field_prefix'] = '<div class="messages warning">' . t('Field cardinality in multifields is limited to one value despite this setting.') . '</div>';
+
+  // Hide the default value widget since we want the user to set the default
+  // value for this entire multifield instead.
+  if (isset($form['instance']['default_value_widget'])) {
+    $form['instance']['default_value_widget']['#access'] = FALSE;
+  }
+
+  // If this multifield has instances, make sure that no field settings that
+  // could change the field schema can be edited by re-invokin
+  // hook_field_settings_form() with $has_data forced to be TRUE.
+  if (multifield_type_has_instances($form['#instance']['bundle'])) {
+    $field = $form['#field'];
+    $instance = $form['#instance'];
+    $has_data = field_has_data($field);
+    if (!$has_data) {
+      $additions = module_invoke($field['module'], 'field_settings_form', $field, $instance, TRUE);
+      if (is_array($additions)) {
+        $form['field']['settings'] = $additions;
+      }
+    }
+  }
+}
+
+function multifield_form_field_ui_field_settings_form_alter(&$form, &$form_state) {
+  if ($form['#entity_type'] == 'multifield' && multifield_type_has_instances($form['#bundle'])) {
+    $instance = $form_state['build_info']['args'][0];
+    $field = field_info_field($instance['field_name']);
+    $has_data = field_has_data($field);
+    if (!$has_data) {
+      $additions = module_invoke($field['module'], 'field_settings_form', $field, $instance, TRUE);
+      if (is_array($additions)) {
+        $form['field']['settings'] = $additions;
+      }
+    }
+  }
+}
+
+function multifield_form_field_ui_field_delete_form_alter(&$form, &$form_state) {
+  $instance = $form_state['build_info']['args'][0];
+  if ($instance['entity_type'] == 'multifield' && multifield_type_has_instances($instance['bundle'])) {
+    $field = field_info_field($instance['field_name']);
+    if (!$field['locked']) {
+      $form['description']['#markup'] = '<div class="messages error">' . t('This field cannot be deleted since this multifield has instances.') . '</div>';
+      unset($form['actions']['submit']);
+    }
   }
 }
 
