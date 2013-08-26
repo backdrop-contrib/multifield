@@ -332,7 +332,7 @@ function _multifield_generate_unique_id() {
  * Implements hook_form_FORM_ID_alter() for field_ui_field_overview_form().
  */
 function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state) {
-  if ($form['#entity_type'] == 'multifield') {
+  if ($form['#entity_type'] != 'multifield') {
     return;
   }
 
