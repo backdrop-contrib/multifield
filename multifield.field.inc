@@ -327,7 +327,10 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
   foreach (field_info_instances('multifield', $field['type']) as $field_name => $instance) {
     $subfield = field_info_field($field_name);
     $subfield['cardinality'] = 1;
-    if ($instance['required'] && $delta > 0) {
+    // If a subfield is required, but this is not the first delta, or this
+    // widget it being used in the default value form for the multifield, then
+    // disable the subfield's requirement flag.
+    if ($instance['required'] && ($delta > 0 || empty($element['#entity']))) {
       $instance['required'] = 0;
     }
     $subitems = isset($pseudo_entity->{$field_name}[LANGUAGE_NONE]) ? $pseudo_entity->{$field_name}[LANGUAGE_NONE] : array();
