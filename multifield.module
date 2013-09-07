@@ -338,7 +338,9 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
 
   // Prevent multifields from being added to multifields themselves.
   $form['fields']['_add_new_field']['type']['#options'] = array_diff_key($form['fields']['_add_new_field']['type']['#options'], multifield_load_all());
-  $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_type_get_fields());
+  if (isset($form['fields']['_add_existing_field'])){
+    $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_type_get_fields());
+  }
 
   // Prevent changes being made if this multifield type has instances.
   if (multifield_type_has_instances($form['#bundle'])) {
