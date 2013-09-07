@@ -12,12 +12,35 @@ class multifield_export_ui extends ctools_export_ui {
     // WTF, why doesn't ctools_export_ui() run these operations
     // through the access method???
     $allowed_operations = parent::build_operations($item);
+    $i = 0;
     foreach ($allowed_operations as $op => $operation) {
       if (!$this->access($op, $item)) {
         unset($allowed_operations[$op]);
       }
+      else {
+        $allowed_operations[$op]['weight'] = $i++;
+      }
     }
+
+    $has_instances = multifield_type_has_instances($item->machine_name);
+    $allowed_operations['manage fields'] = array(
+      'title' => t('Manage fields'),
+      'href' => 'admin/structure/multifield/list/' . $item->machine_name . '/fields',
+      'weight' => $has_instances ? -5 : -10,
+    );
+    $allowed_operations['manage display'] = array(
+      'title' => t('Manage display'),
+      'href' => 'admin/structure/multifield/list/' . $item->machine_name . '/display',
+      'weight' => $has_instances ? -10 : -5,
+    );
+    uasort($allowed_operations, 'drupal_sort_weight');
+
     return $allowed_operations;
+  }
+
+  function list_form(&$form, &$form_state) {
+    parent::list_form($form, $form_state);
+    $form['top row']['disabled']['#access'] = FALSE;
   }
 
   function delete_page($js, $input, $item) {
