@@ -8,6 +8,18 @@ class multifield_export_ui extends ctools_export_ui {
     return parent::access($op, $item);
   }
 
+  function build_operations($item) {
+    // WTF, why doesn't ctools_export_ui() run these operations
+    // through the access method???
+    $allowed_operations = parent::build_operations($item);
+    foreach ($allowed_operations as $op => $operation) {
+      if (!$this->access($op, $item)) {
+        unset($allowed_operations[$op]);
+      }
+    }
+    return $allowed_operations;
+  }
+
   function delete_page($js, $input, $item) {
     $output = parent::delete_page($js, $input, $item);
 
