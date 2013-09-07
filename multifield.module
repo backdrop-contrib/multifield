@@ -206,6 +206,18 @@ function multifield_type_delete($multifield) {
   multifield_type_cache_clear();
 }
 
+/**
+ * Implements hook_multifield_type_delete() on behalf of field module.
+ */
+function field_multifield_type_delete($multifield) {
+  // Any fields created from this multifield must also be deleted.
+  if ($fields = multifield_type_get_fields($multifield)) {
+    foreach ($fields as $field_name) {
+      field_delete_field($field_name);
+    }
+  }
+}
+
 function multifield_type_cache_clear() {
   //entity_info_cache_clear();
   field_info_cache_clear();
