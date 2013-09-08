@@ -152,6 +152,38 @@ function multifield_save($multifield) {
   return $return;
 }
 
+function multifield_delete($multifield) {
+  module_invoke_all('multifield_delete', $multifield);
+
+  db_delete('multifield')
+    ->condition('machine_name', $multifield->machine_name)
+    ->execute();
+
+  field_attach_delete_bundle('multifield', $multifield->machine_name);
+  multifield_cache_clear();
+}
+
+/**
+ * Implements hook_multifield_delete() on behalf of field module.
+ */
+function field_multifield_delete($multifield) {
+  // Any fields created from this multifield must also be deleted.
+  $fields = field_read_fields(array('type' => $multifield->machine_name), array('include_inactive' => TRUE));
+  foreach ($fields as $field) {
+    field_delete_field($field['field_name']);
+  }
+}
+
+function multifield_cache_clear() {
+  field_info_cache_clear();
+  variable_set('menu_rebuild_needed', TRUE);
+  ctools_export_load_object_reset('multifield');
+}
+
+function multifield_field_machine_name_exists($name) {
+  return field_info_field_types($name) || multifield_load($name);
+}
+
 function multifield_type_get_fields($multifield = NULL) {
   $fields = array();
   $map = field_info_field_map();
@@ -179,37 +211,6 @@ function multifield_type_has_instances($machine_name) {
   }
 
   return FALSE;
-}
-
-function multifield_delete($multifield) {
-  module_invoke_all('multifield_delete', $multifield);
-
-  db_delete('multifield')
-    ->condition('machine_name', $multifield->machine_name)
-    ->execute();
-
-  field_attach_delete_bundle('multifield', $multifield->machine_name);
-  multifield_cache_clear();
-}
-
-/**
- * Implements hook_multifield_delete() on behalf of field module.
- */
-function field_multifield_delete($multifield) {
-  // Any fields created from this multifield must also be deleted.
-  $fields = field_read_fields(array('type' => $multifield->machine_name), array('include_inactive' => TRUE));
-  foreach ($fields as $field) {
-    field_delete_field($field['field_name']);
-  }
-}
-
-function multifield_cache_clear() {
-  field_info_cache_clear();
-  variable_set('menu_rebuild_needed', TRUE);
-}
-
-function multifield_field_machine_name_exists($name) {
-  return field_info_field_types($name) || multifield_load($name);
 }
 
 function multifield_get_subfields($machine_name = NULL) {
@@ -424,14 +425,6 @@ function multifield_views_data_alter(array &$data) {
     unset($table['table']['join']['multifield']);
     unset($table['table']['default_relationship']['multifield']);
   }
-}
-
-function multifield_get_names() {
-  $names = &drupal_static(__FUNCTION__, array());
-  foreach (multifield_load_all() as $machine_name => $multifield) {
-    $names[$machine_name] = $multifield->label;
-  }
-  return $names;
 }
 
 /**
