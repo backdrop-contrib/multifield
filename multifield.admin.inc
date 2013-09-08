@@ -19,7 +19,20 @@ function multifield_list_page() {
     $row = array('data' => array());
     $row['data'][] = check_plain($multifield->label);
     $row['data'][] = check_plain($machine_name);
-    $row['data'][] = count(field_info_instances('multifield', $machine_name));
+
+    $subfields = field_info_instances('multifield', $machine_name);
+    $row['data'][] = count($subfields);
+    switch (count($subfields)) {
+      case 0:
+        $row['class'][] = 'error';
+        $row['title'] = t('You will not be able to use this multifield until it has at least one subfield.');
+        break;
+
+      case 1:
+        $row['class'][] = 'warning';
+        $row['title'] = t('A multifield with only one subfield does not make a lot of sense. You should add more fields or just use a normal field.');
+        break;
+    }
 
     $fields = _multifield_get_usage_summary($multifield->machine_name, TRUE);
     $row['data'][] = !empty($fields) ? theme('item_list', array('items' => $fields)) : t('None');
