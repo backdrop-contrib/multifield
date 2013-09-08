@@ -33,6 +33,45 @@ function multifield_permission() {
  * Implements hook_menu().
  */
 function multifield_menu() {
+  $info['admin/structure/multifield'] = array(
+    'title' => 'Multifield',
+    'description' => 'Create and manage multifields and their subfields.',
+    'page callback' => 'multifield_list_page',
+    'access arguments' => array('administer multifield'),
+    'file' => 'multifield.admin.inc',
+  );
+  $info['admin/structure/multifield/add'] = array(
+    'title' => 'Add multifield type',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('multifield_edit_form'),
+    'access arguments' => array('administer multifield'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'multifield.admin.inc',
+  );
+  $info['admin/structure/multifield/manage/%multifield'] = array(
+    'title' => 'Edit multifield',
+    'title callback' => 'multifield_page_title',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('multifield_edit_form', 4),
+    'access arguments' => array('administer multifield'),
+    'file' => 'multifield.admin.inc',
+  );
+  $info['admin/structure/multifield/manage/%multifield/edit'] = array(
+    'title' => 'Edit',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $info['admin/structure/multifield/manage/%multifield/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('multifield_delete_form', 4),
+    'access arguments' => array('administer multifield'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'multifield.admin.inc',
+    'weight' => 100,
+  );
+
   $info['multifield/field-remove-item/ajax'] = array(
     'title' => 'Remove item callback',
     'page callback' => 'multifield_field_widget_remove_item_ajax',
@@ -44,6 +83,10 @@ function multifield_menu() {
   );
 
   return $info;
+}
+
+function multifield_page_title($multifield) {
+  return check_plain($multifield->label);
 }
 
 /**
@@ -72,8 +115,8 @@ function multifield_entity_info() {
     $info['multifield']['bundles'][$machine_name] = array(
       'label' => $multifield->label,
       'admin' => array(
-        'path' => 'admin/structure/multifield/list/%multifield',
-        'real path' => 'admin/structure/multifield/list/' . $machine_name,
+        'path' => 'admin/structure/multifield/manage/%multifield',
+        'real path' => 'admin/structure/multifield/manage/' . $machine_name,
         'bundle argument' => 4,
         'access arguments' => array('administer multifield'),
       ),
@@ -83,18 +126,10 @@ function multifield_entity_info() {
   return $info;
 }
 
-/**
- * Implements hook_ctools_plugin_directory().
- */
-function multifield_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'ctools' && $plugin == 'export_ui') {
-    return 'plugins/' . $plugin;
-  }
-}
-
 function multifield_load($name) {
   ctools_include('export');
-  return ctools_export_crud_load('multifield', $name);
+  $result = ctools_export_load_object('multifield', 'names', array($name));
+  return isset($result[$name]) ? $result[$name] : FALSE;
 }
 
 function multifield_load_all() {
@@ -123,38 +158,19 @@ function multifield_type_save($multifield) {
   $return = NULL;
   module_invoke_all('multifield_type_presave', $multifield);
 
-  if ($multifield->export_type & EXPORT_IN_DATABASE) {
+  if (!empty($multifield->mfid)) {
     // Existing record.
     $return = drupal_write_record('multifield', $multifield, array('machine_name'));
     module_invoke_all('mulifield_type_update', $multifield);
   }
   else {
-    $multifield->export_type = EXPORT_IN_DATABASE;
     $return = drupal_write_record('multifield', $multifield, array());
     module_invoke_all('multifield_type_insert', $multifield);
     field_attach_create_bundle('multifield', $multifield->machine_name);
   }
 
-  multifield_type_cache_clear();
+  multifield_cache_clear();
   return $return;
-}
-
-/**
- * Implements hook_multifield_type_insert().
- *
- * This is horrible hack to fix that users should be redirected to the
- * 'Manage Fields' tab after creating a new multifield.
- */
-function multifield_multifield_type_insert($multifield) {
-  if ($_GET['q'] == 'admin/structure/multifield/add') {
-    $_GET['destination'] = 'admin/structure/multifield/list/' . $multifield->machine_name . '/fields';
-  }
-}
-
-function multifield_type_access($op, $multifield) {
-  if ($op == 'edit' || $op == 'delete') {
-
-  }
 }
 
 function multifield_type_get_fields($multifield = NULL) {
@@ -193,23 +209,21 @@ function multifield_delete($name) {
   }
 }
 
-function multifield_type_delete($multifield) {
-  $machine_name = is_object($multifield) ? $multifield->machine_name : $multifield;
-
-  module_invoke_all('multifield_type_delete', $multifield);
+function multifield_delete($multifield) {
+  module_invoke_all('multifield_delete', $multifield);
 
   db_delete('multifield')
-    ->condition('machine_name', $machine_name)
+    ->condition('machine_name', $multifield->machine_name)
     ->execute();
 
-  field_attach_delete_bundle('multifield', $machine_name);
-  multifield_type_cache_clear();
+  field_attach_delete_bundle('multifield', $multifield->machine_name);
+  multifield_cache_clear();
 }
 
 /**
- * Implements hook_multifield_type_delete() on behalf of field module.
+ * Implements hook_multifield_delete() on behalf of field module.
  */
-function field_multifield_type_delete($multifield) {
+function field_multifield_delete($multifield) {
   // Any fields created from this multifield must also be deleted.
   if ($fields = multifield_type_get_fields($multifield)) {
     foreach ($fields as $field_name) {
@@ -218,10 +232,9 @@ function field_multifield_type_delete($multifield) {
   }
 }
 
-function multifield_type_cache_clear() {
-  //entity_info_cache_clear();
+function multifield_cache_clear() {
   field_info_cache_clear();
-  //variable_set('menu_rebuild_needed', TRUE);
+  variable_set('menu_rebuild_needed', TRUE);
 }
 
 function multifield_field_machine_name_exists($name) {
@@ -440,4 +453,46 @@ function multifield_views_data_alter(array &$data) {
     unset($table['table']['join']['multifield']);
     unset($table['table']['default_relationship']['multifield']);
   }
+}
+
+function multifield_type_get_names() {
+  $names = &drupal_static(__FUNCTION__, array());
+  foreach (multifield_load_all() as $machine_name => $multifield) {
+    $names[$machine_name] = $multifield->label;
+  }
+  return $names;
+}
+
+/**
+ * Implements hook_admin_menu_map().
+ */
+function multifield_admin_menu_map() {
+  if (!user_access('administer multifield')) {
+    return;
+  }
+
+  $multifields = multifield_load_all();
+  $map['admin/structure/multifield/manage/%multifield'] = array(
+    'parent' => 'admin/structure/multifield',
+    'arguments' => array(
+      array('%multifield' => array_keys($multifields)),
+    ),
+  );
+
+  // Support the Field UI mappings.
+  if (module_exists('field_ui')) {
+    $arguments = array();
+    foreach ($multifields as $machine_name => $multifield) {
+      $instances = field_info_instances('multifield', $machine_name);
+      $arguments[] = array(
+        '%multifield' => array($machine_name),
+        '%field_ui_menu' => array_keys($instances),
+      );
+    }
+    $map['admin/structure/multifield/manage/%multifield/fields/%field_ui_menu'] = array(
+      'parent' => 'admin/structure/multifield/manage/%multifield/fields',
+      'arguments' => $arguments,
+    );
+  }
+  return $map;
 }

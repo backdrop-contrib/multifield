@@ -50,8 +50,9 @@ function multifield_schema() {
         'current_version' => 1,
       ),
       'cache defaults' => TRUE,
+      'load callback' => 'multifield_load',
       'save callback' => 'multifield_type_save',
-      'delete callback' => 'multifield_type_delete',
+      'delete callback' => 'multifield_delete',
     ),
   );
 
