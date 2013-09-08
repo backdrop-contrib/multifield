@@ -441,20 +441,5 @@ function multifield_admin_menu_map() {
     ),
   );
 
-  // Support the Field UI mappings.
-  if (module_exists('field_ui')) {
-    $arguments = array();
-    foreach ($multifields as $machine_name => $multifield) {
-      $instances = field_info_instances('multifield', $machine_name);
-      $arguments[] = array(
-        '%multifield' => array($machine_name),
-        '%field_ui_menu' => array_keys($instances),
-      );
-    }
-    $map['admin/structure/multifield/manage/%multifield/fields/%field_ui_menu'] = array(
-      'parent' => 'admin/structure/multifield/manage/%multifield/fields',
-      'arguments' => $arguments,
-    );
-  }
   return $map;
 }
