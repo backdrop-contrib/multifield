@@ -27,7 +27,7 @@ function multifield_menu() {
     'file' => 'multifield.admin.inc',
   );
   $info['admin/structure/multifield/add'] = array(
-    'title' => 'Add multifield type',
+    'title' => 'Add multifield',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('multifield_edit_form'),
     'access arguments' => array('administer multifield'),
@@ -35,7 +35,7 @@ function multifield_menu() {
     'file' => 'multifield.admin.inc',
   );
   $info['admin/structure/multifield/manage/%multifield'] = array(
-    'title' => 'Edit multifield type',
+    'title' => 'Edit multifield',
     'title callback' => 'multifield_page_title',
     'title arguments' => array(4),
     'page callback' => 'drupal_get_form',
