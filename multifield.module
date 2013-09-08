@@ -187,10 +187,9 @@ function multifield_delete($multifield) {
  */
 function field_multifield_delete($multifield) {
   // Any fields created from this multifield must also be deleted.
-  if ($fields = multifield_type_get_fields($multifield)) {
-    foreach ($fields as $field_name) {
-      field_delete_field($field_name);
-    }
+  $fields = field_read_fields(array('type' => $multifield->machine_name), array('include_inactive' => TRUE));
+  foreach ($fields as $field) {
+    field_delete_field($field['field_name']);
   }
 }
 
