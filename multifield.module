@@ -383,6 +383,7 @@ function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
       $additions = module_invoke($field['module'], 'field_settings_form', $field, $instance, TRUE);
       if (is_array($additions)) {
         $form['field']['settings'] = $additions;
+        $form['field']['#description'] = '<p>' . t('These settings apply to the %field field everywhere it is used.', array('%field' => $instance['label'])) . ' ' . t('Because the multifield already has instances, some settings can no longer be changed.') . '</p>';
       }
     }
   }
@@ -397,6 +398,7 @@ function multifield_form_field_ui_field_settings_form_alter(&$form, &$form_state
       $additions = module_invoke($field['module'], 'field_settings_form', $field, $instance, TRUE);
       if (is_array($additions)) {
         $form['field']['settings'] = $additions;
+        $form['field']['#description'] = '<p>' . t('These settings apply to the %field field everywhere it is used.', array('%field' => $instance['label'])) . ' ' . t('Because the multifield already has instances, some settings can no longer be changed.') . '</p>';
       }
     }
   }
