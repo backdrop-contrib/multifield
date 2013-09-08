@@ -127,7 +127,6 @@ function multifield_edit_form_submit($form, &$form_state) {
   form_state_values_clean($form_state);
   $multifield = (object) $form_state['values'];
   $multifield->is_new = empty($multifield->mfid);
-  dpm($multifield);
   multifield_type_save($multifield);
   watchdog('multifield', 'Saved multifield type %type.', array('%type' => $multifield->label), WATCHDOG_INFO);
 
