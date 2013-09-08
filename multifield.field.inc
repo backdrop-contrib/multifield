@@ -1,6 +1,26 @@
 <?php
 
 /**
+ * @file
+ * Field integration for the Multifield module.
+ */
+
+// Trying to keep track of all the relevant field hooks that need to be run.
+//  field_attach_delete()
+//  field_attach_form()
+//  field_attach_form_validate()
+//  field_attach_insert()
+//  field_attach_load()
+//  field_attach_load_revision()
+//  field_attach_prepare_view()
+//  field_attach_preprocess()
+//  field_attach_presave()
+//  field_attach_submit()
+//  field_attach_update()
+//X field_attach_validate()
+//  field_attach_view()
+
+/**
  * Implements hook_field_info().
  */
 function multifield_field_info() {
