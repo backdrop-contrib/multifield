@@ -127,7 +127,7 @@ function multifield_edit_form_submit($form, &$form_state) {
   form_state_values_clean($form_state);
   $multifield = (object) $form_state['values'];
   $multifield->is_new = empty($multifield->mfid);
-  multifield_type_save($multifield);
+  multifield_save($multifield);
   watchdog('multifield', 'Saved multifield type %type.', array('%type' => $multifield->label), WATCHDOG_INFO);
 
   if (!empty($multifield->is_new)) {
@@ -157,7 +157,7 @@ function multifield_delete_form($form, &$form_state, $multifield) {
 
 function multifield_delete_form_submit($form, &$form_state) {
   $multifield = $form['#multifield'];
-  multifield_type_delete($multifield);
+  multifield_delete($multifield);
 
   watchdog('multifield', 'Deleted multifield type %type.', array('%type' => $multifield->label));
   $form_state['redirect'] = 'admin/structure/multifield';

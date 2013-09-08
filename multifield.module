@@ -20,7 +20,7 @@ function multifield_permission() {
  */
 function multifield_menu() {
   $info['admin/structure/multifield'] = array(
-    'title' => 'Multifield',
+    'title' => 'Multifields',
     'description' => 'Create and manage multifields and their subfields.',
     'page callback' => 'multifield_list_page',
     'access arguments' => array('administer multifield'),
@@ -35,7 +35,7 @@ function multifield_menu() {
     'file' => 'multifield.admin.inc',
   );
   $info['admin/structure/multifield/manage/%multifield'] = array(
-    'title' => 'Edit multifield',
+    'title' => 'Edit multifield type',
     'title callback' => 'multifield_page_title',
     'title arguments' => array(4),
     'page callback' => 'drupal_get_form',
@@ -120,38 +120,21 @@ function multifield_load($name) {
 
 function multifield_load_all() {
   ctools_include('export');
-  return ctools_export_crud_load_all('multifield');
-}
-
-function multifield_load_all_enabled() {
-  $multifields = multifield_load_all();
-  foreach ($multifields as $machine_name => $multifield) {
-    if (!empty($multifield->disabled)) {
-      unset($multifields[$machine_name]);
-    }
-  }
-  return $multifields;
+  return ctools_export_load_object('multifield');
 }
 
 function multifield_save($multifield) {
-  //$server->is_new = empty($server->sid);
-  //module_invoke_all('redmine_server_presave', $server);
-  ctools_include('export');
-  ctools_export_crud_save('multifield', $multifield);
-}
-
-function multifield_type_save($multifield) {
   $return = NULL;
-  module_invoke_all('multifield_type_presave', $multifield);
+  module_invoke_all('multifield_presave', $multifield);
 
   if (!empty($multifield->mfid)) {
     // Existing record.
     $return = drupal_write_record('multifield', $multifield, array('machine_name'));
-    module_invoke_all('mulifield_type_update', $multifield);
+    module_invoke_all('mulifield_update', $multifield);
   }
   else {
     $return = drupal_write_record('multifield', $multifield, array());
-    module_invoke_all('multifield_type_insert', $multifield);
+    module_invoke_all('multifield_insert', $multifield);
     field_attach_create_bundle('multifield', $multifield->machine_name);
   }
 
@@ -186,13 +169,6 @@ function multifield_type_has_instances($machine_name) {
   }
 
   return FALSE;
-}
-
-function multifield_delete($name) {
-  if ($multifield = multifield_load($name)) {
-    ctools_include('export');
-    return ctools_export_crud_delete('multifield', $multifield);
-  }
 }
 
 function multifield_delete($multifield) {
@@ -441,7 +417,7 @@ function multifield_views_data_alter(array &$data) {
   }
 }
 
-function multifield_type_get_names() {
+function multifield_get_names() {
   $names = &drupal_static(__FUNCTION__, array());
   foreach (multifield_load_all() as $machine_name => $multifield) {
     $names[$machine_name] = $multifield->label;

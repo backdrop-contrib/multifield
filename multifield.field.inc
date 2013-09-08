@@ -25,7 +25,7 @@
  */
 function multifield_field_info() {
   $info = array();
-  $multifields = multifield_load_all_enabled();
+  $multifields = multifield_load_all();
   foreach ($multifields as $machine_name => $multifield) {
     // Only show this multifield as an option to create if it has subfields.
     if (multifield_get_subfields($machine_name)) {
@@ -317,7 +317,7 @@ function _multifield_field_attach_delete($entity_type, $entity) {
  */
 function multifield_field_widget_info() {
   $info = array();
-  $multifields = multifield_load_all_enabled();
+  $multifields = multifield_load_all();
 
   if (!empty($multifields)) {
     $info['multifield_default'] = array(
@@ -534,7 +534,7 @@ function multifield_field_widget_remove_item_submit($form, &$form_state) {
  */
 function multifield_field_formatter_info() {
   $info = array();
-  $multifields = multifield_load_all_enabled();
+  $multifields = multifield_load_all();
 
   if (!empty($multifields)) {
     $info['multifield_default'] = array(

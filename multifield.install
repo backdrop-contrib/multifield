@@ -51,7 +51,8 @@ function multifield_schema() {
       ),
       'cache defaults' => TRUE,
       'load callback' => 'multifield_load',
-      'save callback' => 'multifield_type_save',
+      'load all callback' => 'multifield_load_all',
+      'save callback' => 'multifield_save',
       'delete callback' => 'multifield_delete',
     ),
   );
