@@ -36,7 +36,7 @@ function multifield_list_page() {
         'href' => $base . '/fields',
       );
       $operations['manage display'] = array(
-        'title' => t('Manage subfield display'),
+        'title' => t('Manage display'),
         'href' => $base . '/display',
       );
     }

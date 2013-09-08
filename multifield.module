@@ -71,6 +71,16 @@ function multifield_menu() {
   return $info;
 }
 
+/**
+ * Implements hook_menu_alter().
+ */
+function multifield_menu_alter(&$items) {
+  // Change the Field UI title of 'Manage fields' to 'Manage subfields'
+  if (isset($items['admin/structure/multifield/manage/%multifield/fields'])) {
+    $items['admin/structure/multifield/manage/%multifield/fields']['title'] = 'Manage subfields';
+  }
+}
+
 function multifield_page_title($multifield) {
   return check_plain($multifield->label);
 }
