@@ -1,5 +1,6 @@
 name = Multifield
 description = Provides a combo field type.
+package = Fields
 core = 7.x
 dependencies[] = ctools
 configure = admin/structure/multifield
