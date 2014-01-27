@@ -94,7 +94,7 @@ function _multifield_field_attach_load($entity_type, $entities, $age = FIELD_LOA
 function multifield_field_access($op, $field, $entity_type, $entity, $account) {
   // We should return FALSE if all the subfields' field_access() checks all
   // return FALSE.
-  if (in_array($field['field_name'], multifield_type_get_fields())) {
+  if ($field['module'] == 'multifield') {
     $subfield_names = multifield_get_subfields($field['type']);
     $subfield_access = array();
 
