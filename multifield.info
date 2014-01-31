@@ -5,3 +5,4 @@ core = 7.x
 dependencies[] = ctools
 dependencies[] = field
 configure = admin/structure/multifield
+files[] = tests/MultifieldUnitTestCase.test

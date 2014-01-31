@@ -1,0 +1,59 @@
+<?php
+
+class MultifieldUnitTestCase extends DrupalWebTestCase {
+  protected $profile = 'testing';
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Multifield unit tests',
+      'description' => 'Tests basic-level multifield functionality and APIs.',
+      'group' => 'Multifield',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('multifield'));
+  }
+
+  public function testApis() {
+    $this->assertIdentical(multifield_get_fields(), array());
+    $this->assertIdentical(multifield_type_has_fields('test'), FALSE);
+    $this->assertIdentical(multifield_type_get_fields('test'), array());
+    $this->assertIdentical(multifield_get_subfields(), array());
+    $this->assertIdentical(multifield_type_has_subfields('test'), FALSE);
+    $this->assertIdentical(multifield_type_get_subfields('test'), array());
+    $this->assertIdentical(field_info_field_types('test'), NULL);
+    $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
+    $this->assertIdentical($schema, array());
+
+    $multifield = new stdClass();
+    $multifield->machine_name = 'test';
+    $multifield->label = 'Test label';
+    $multifield->description = 'Test description';
+    multifield_save($multifield);
+    $this->assertTrue(!empty($multifield->mfid));
+
+    $this->assertIdentical(multifield_get_fields(), array());
+    $this->assertIdentical(multifield_type_has_fields('test'), FALSE);
+    $this->assertIdentical(multifield_type_get_fields('test'), array());
+    $this->assertIdentical(multifield_get_subfields(), array());
+    $this->assertIdentical(multifield_type_has_subfields('test'), FALSE);
+    $this->assertIdentical(multifield_type_get_subfields('test'), array());
+    $this->assertIdentical(field_info_field_types('test'), NULL);
+    $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
+    $this->assertIdentical($schema, array());
+
+
+    multifield_delete($multifield);
+
+    $this->assertIdentical(multifield_get_fields(), array());
+    $this->assertIdentical(multifield_type_has_fields('test'), FALSE);
+    $this->assertIdentical(multifield_type_get_fields('test'), array());
+    $this->assertIdentical(multifield_get_subfields(), array());
+    $this->assertIdentical(multifield_type_has_subfields('test'), FALSE);
+    $this->assertIdentical(multifield_type_get_subfields('test'), array());
+    $this->assertIdentical(field_info_field_types('test'), NULL);
+    $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
+    $this->assertIdentical($schema, array());
+  }
+}

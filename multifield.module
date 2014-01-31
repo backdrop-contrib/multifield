@@ -233,7 +233,7 @@ function multifield_type_has_fields($machine_name) {
  *   An array of field names.
  */
 function multifield_type_get_fields($machine_name) {
-  return array_keys(array_intersect($fields, array($machine_name)));
+  return array_keys(array_intersect(multifield_get_fields(), array($machine_name)));
 }
 
 /**
