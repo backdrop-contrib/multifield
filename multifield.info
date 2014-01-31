@@ -3,4 +3,5 @@ description = Provides a combo field type.
 package = Fields
 core = 7.x
 dependencies[] = ctools
+dependencies[] = field
 configure = admin/structure/multifield
