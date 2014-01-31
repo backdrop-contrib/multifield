@@ -184,33 +184,26 @@ function multifield_field_machine_name_exists($name) {
   return field_info_field_types($name) || multifield_load($name);
 }
 
-function multifield_type_get_fields($multifield = NULL) {
-  $fields = array();
-  $map = field_info_field_map();
-  foreach ($map as $field_name => $field) {
-    if (!empty($multifield)) {
-      if ($field['type'] == $multifield->machine_name) {
-        $fields[$field_name] = $field_name;
-      }
-    }
-    else {
-      if (multifield_load($field['type'])) {
-        $fields[$field_name] = $field_name;
-      }
-    }
+/**
+ * Return an array of multifields (field types), keyed by field name.
+ */
+function multifield_get_fields($multifield = NULL) {
+  $fields = &drupal_static(__FUNCTION__);
+
+  if (!isset($fields)) {
+    // This query is based from FieldInfo::getFieldMap().
+    $fields = db_query("SELECT field_name, type FROM {field_config} WHERE active = 1 AND storage_active = 1 AND deleted = 0 AND module = 'multifield'")->fetchAllKeyed();
   }
+
+  if (!empty($multifield)) {
+    return array_intersect($fields, array($multifield->machine_name));
+  }
+
   return $fields;
 }
 
 function multifield_type_has_instances($machine_name) {
-  $map = field_info_field_map();
-  foreach ($map as $field_name => $field) {
-    if ($field['type'] == $machine_name) {
-      return TRUE;
-    }
-  }
-
-  return FALSE;
+  return in_array($machine_name, multifield_get_fields());
 }
 
 function multifield_get_subfields($machine_name = NULL) {
@@ -336,7 +329,7 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
   // Prevent multifields from being added to multifields themselves.
   $form['fields']['_add_new_field']['type']['#options'] = array_diff_key($form['fields']['_add_new_field']['type']['#options'], multifield_load_all());
   if (isset($form['fields']['_add_existing_field'])){
-    $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_type_get_fields());
+    $form['fields']['_add_existing_field']['field_name']['#options'] = array_diff_key($form['fields']['_add_existing_field']['field_name']['#options'], multifield_get_fields());
   }
 
   // Prevent changes being made if this multifield type has instances.

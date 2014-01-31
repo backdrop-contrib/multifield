@@ -180,11 +180,13 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
 
 function multifield_field_attach_submit($entity_type, $entity, $form, $form_state) {
   list(, , $bundle) = entity_extract_ids($entity_type, $entity);
-  foreach (field_info_instances($entity_type, $bundle) as $field_name => $instance) {
-    if ($instance['module'] == 'multifield' && !empty($entity->{$field_name})) {
+  $multifields = multifield_get_fields();
+  $instances = array_intersect_key(field_info_instances($entity_type, $bundle), $multifields);
+  foreach (array_keys($instances) as $field_name) {
+    if (!empty($entity->{$field_name})) {
       foreach ($entity->{$field_name} as $langcode => $items) {
         foreach ($items as $delta => $item) {
-          $pseudo_entity = _multifield_field_item_to_entity($instance['type'], $item);
+          $pseudo_entity = _multifield_field_item_to_entity($multifields[$field_name], $item);
           _multifield_field_attach_submit('multifield', $pseudo_entity, $form, $form_state);
           $entity->{$field_name}[$langcode][$delta] = _multifield_field_entity_to_item($pseudo_entity);
         }
