@@ -28,7 +28,7 @@ function multifield_field_info() {
   $multifields = multifield_load_all();
   foreach ($multifields as $machine_name => $multifield) {
     // Only show this multifield as an option to create if it has subfields.
-    if (multifield_get_subfields($machine_name)) {
+    if (multifield_type_has_subfields($machine_name)) {
       $info[$machine_name] = array(
         'label' => $multifield->label,
         'description' => $multifield->description,
@@ -44,7 +44,7 @@ function multifield_field_info() {
  * Implements hook_field_load().
  */
 function multifield_field_load($entity_type, $entities, $field, $instances, $langcode, &$items, $age) {
-  foreach (multifield_get_subfields($field['type']) as $field_name) {
+  foreach (multifield_type_get_subfields($field['type']) as $field_name) {
     $subfield = field_info_field($field_name);
     foreach (array_keys($subfield['columns']) as $column) {
       foreach ($entities as $id => $entity) {
@@ -95,7 +95,7 @@ function multifield_field_access($op, $field, $entity_type, $entity, $account) {
   // We should return FALSE if all the subfields' field_access() checks all
   // return FALSE.
   if ($field['module'] == 'multifield') {
-    $subfield_names = multifield_get_subfields($field['type']);
+    $subfield_names = multifield_type_get_subfields($field['type']);
     $subfield_access = array();
 
     if (!empty($entity) && $items = field_get_items($entity_type, $entity, $field['field_name'])) {

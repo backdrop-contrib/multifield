@@ -177,20 +177,18 @@ function multifield_delete_form_submit($form, &$form_state) {
 }
 
 function _multifield_get_usage_summary($machine_name, $links = FALSE) {
-  $field_map = field_info_field_map();
   $fields = array();
-  foreach ($field_map as $field_name => $field) {
-    if ($field['type'] == $machine_name) {
-      foreach ($field['bundles'] as $entity_type => $bundles) {
-        foreach ($bundles as $bundle) {
-          $text = "$field_name ($entity_type:$bundle)";
-          if ($links && module_exists('field_ui')) {
-            $path = _field_ui_bundle_admin_path($entity_type, $bundle) . '/fields/' . $field_name;
-            $fields[] = l($text, $path);
-          }
-          else {
-            $fields[] = check_plain($text);
-          }
+  foreach (multifield_type_get_fields($machine_name) as $field_name) {
+    $field = field_info_field($field_name);
+    foreach ($field['bundles'] as $entity_type => $bundles) {
+      foreach ($bundles as $bundle) {
+        $text = "$field_name ($entity_type:$bundle)";
+        if ($links && module_exists('field_ui')) {
+          $path = _field_ui_bundle_admin_path($entity_type, $bundle) . '/fields/' . $field_name;
+          $fields[] = l($text, $path);
+        }
+        else {
+          $fields[] = check_plain($text);
         }
       }
     }
