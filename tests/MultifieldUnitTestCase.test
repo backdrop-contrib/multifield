@@ -43,7 +43,6 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
     $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
     $this->assertIdentical($schema, array());
 
-
     multifield_delete($multifield);
 
     $this->assertIdentical(multifield_get_fields(), array());
