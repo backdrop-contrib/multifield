@@ -107,8 +107,8 @@ function multifield_edit_form($form, &$form_state, $multifield = NULL) {
       'label' => t('Field type machine name'),
       'source' => array('label'),
     ),
-    // Field API limits this to 32 characters.
-    '#maxlength' => 26,
+    // Same maximum length as {field_config}.type
+    '#maxlength' => 128,
     // Cannot change the machine name once created.
     '#disabled' => !empty($multifield->machine_name),
   );
