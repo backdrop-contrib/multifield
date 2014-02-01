@@ -84,7 +84,7 @@ function multifield_edit_form($form, &$form_state, $multifield = NULL) {
 
   $form['mfid'] = array(
     '#type' => 'value',
-    '#value' => $multifield->mfid,
+    '#value' => !empty($multifield->mfid) ? $multifield->mfid : NULL,
   );
 
   $form['label'] = array(
