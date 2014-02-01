@@ -144,7 +144,13 @@ function multifield_edit_form_submit($form, &$form_state) {
   watchdog('multifield', 'Saved multifield type %type.', array('%type' => $multifield->label), WATCHDOG_INFO);
 
   if (!empty($multifield->is_new)) {
-    $form_state['redirect'] = 'admin/structure/multifield/manage/' . $multifield->machine_name . '/fields';
+    if (module_exists('field_ui')) {
+      $form_state['redirect'] = 'admin/structure/multifield/manage/' . $multifield->machine_name . '/fields';
+    }
+    else {
+      drupal_set_message(t('The Field UI module must be enabled to add fields to the multifield.'));
+      $form_state['redirect'] = 'admin/structure/multifield';
+    }
   }
   else {
     $form_state['redirect'] = 'admin/structure/multifield';
