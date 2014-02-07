@@ -248,7 +248,7 @@ function multifield_type_get_fields($machine_name) {
 function multifield_get_subfields() {
   $subfields = &drupal_static(__FUNCTION__);
 
-  if (!isset($fields)) {
+  if (!isset($subfields)) {
     if ($cached = cache_get('field_info:multifield:subfields', 'cache_field')) {
       $subfields = $cached->data;
     }
@@ -256,7 +256,7 @@ function multifield_get_subfields() {
       $subfields = array();
       $results = db_query("SELECT fci.bundle, fci.field_name FROM {field_config_instance} fci INNER JOIN {field_config} fc ON fc.id = fci.field_id WHERE fc.active = 1 AND fc.storage_active = 1 AND fc.deleted = 0 AND fci.deleted = 0 AND fci.entity_type = 'multifield'")->fetchAll();
       foreach ($results as $result) {
-        if (isset($subfields[$result->bundle])) {
+        if (!isset($subfields[$result->bundle])) {
           $subfields[$result->bundle] = array();
         }
         $subfields[$result->bundle][] = $result->field_name;
@@ -294,6 +294,24 @@ function multifield_type_has_subfields($machine_name) {
 function multifield_type_get_subfields($machine_name) {
   $subfields = multifield_get_subfields();
   return isset($subfields[$machine_name]) ? $subfields[$machine_name] : array();
+}
+
+/**
+ * Implements hook_field_create_field().
+ */
+function multifield_field_create_field($field) {
+  if ($field['module'] == 'multifield') {
+    multifield_cache_clear();
+  }
+}
+
+/**
+ * Implements hook_field_create_instance().
+ */
+function multifield_field_create_instance($instance) {
+  if ($instance['entity_type'] == 'multifield') {
+    multifield_cache_clear();
+  }
 }
 
 function _multifield_field_item_to_entity($machine_name, array $item, array $additional = array()) {

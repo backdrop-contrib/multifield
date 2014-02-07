@@ -12,7 +12,7 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
   }
 
   public function setUp() {
-    parent::setUp(array('multifield'));
+    parent::setUp(array('field_test', 'multifield'));
   }
 
   public function testApis() {
@@ -22,7 +22,7 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
     $this->assertIdentical(multifield_get_subfields(), array());
     $this->assertIdentical(multifield_type_has_subfields('test'), FALSE);
     $this->assertIdentical(multifield_type_get_subfields('test'), array());
-    $this->assertIdentical(field_info_field_types('test'), NULL);
+    $this->assertFalse(field_info_field_types('test'), NULL);
     $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
     $this->assertIdentical($schema, array());
 
@@ -39,9 +39,123 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
     $this->assertIdentical(multifield_get_subfields(), array());
     $this->assertIdentical(multifield_type_has_subfields('test'), FALSE);
     $this->assertIdentical(multifield_type_get_subfields('test'), array());
-    $this->assertIdentical(field_info_field_types('test'), NULL);
+    $this->assertFalse(field_info_field_types('test'), NULL);
     $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
     $this->assertIdentical($schema, array());
+
+    $field_name1 = 'field_test_field_1';
+    $field1 = array(
+      'field_name' => $field_name1,
+      'type' => 'test_field',
+      'cardinality' => 4,
+    );
+    $field1 = field_create_field($field1);
+    $instance1 = array(
+      'field_name' => $field_name1,
+      'entity_type' => 'multifield',
+      'bundle' => 'test',
+      'label' => $field_name1 . '_label',
+      'description' => $field_name1 . '_description',
+      'weight' => mt_rand(0, 127),
+      'settings' => array(
+        'test_instance_setting' => $this->randomName(),
+      ),
+      'widget' => array(
+        'type' => 'test_field_widget',
+        'label' => 'Test Field',
+        'settings' => array(
+          'test_widget_setting' => $this->randomName(),
+        ),
+      ),
+    );
+    field_create_instance($instance1);
+
+    $this->assertIdentical(multifield_get_fields(), array());
+    $this->assertIdentical(multifield_type_has_fields('test'), FALSE);
+    $this->assertIdentical(multifield_type_get_fields('test'), array());
+    $this->assertIdentical(multifield_get_subfields(), array('test' => array($field_name1)));
+    $this->assertIdentical(multifield_type_has_subfields('test'), TRUE);
+    $this->assertIdentical(multifield_type_get_subfields('test'), array($field_name1));
+    $this->assertTrue(field_info_field_types('test'));
+    $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
+    $this->assertIdentical($schema, array(
+      'columns' => array(
+        $field_name1 . '_value' => array(
+          'type' => 'int',
+          'size' => 'medium',
+          'not null' => FALSE,
+        ),
+        'id' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+      ),
+      'indexes' => array(
+        $field_name1 . '_value' => array($field_name1 . '_value'),
+        'id' => array('id'),
+      ),
+    ));
+
+    $field_name2 = 'field_test_field_2';
+    $field2 = array(
+      'field_name' => $field_name2,
+      'type' => 'test_field',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+    );
+    $field2 = field_create_field($field2);
+    $instance2 = array(
+      'field_name' => $field_name2,
+      'entity_type' => 'multifield',
+      'bundle' => 'test',
+      'label' => $field_name2 . '_label',
+      'description' => $field_name2 . '_description',
+      'weight' => mt_rand(0, 127),
+      'settings' => array(
+        'test_instance_setting' => $this->randomName(),
+      ),
+      'widget' => array(
+        'type' => 'test_field_widget',
+        'label' => 'Test Field',
+        'settings' => array(
+          'test_widget_setting' => $this->randomName(),
+        ),
+      ),
+    );
+    field_create_instance($instance2);
+
+    $this->assertIdentical(multifield_get_fields(), array());
+    $this->assertIdentical(multifield_type_has_fields('test'), FALSE);
+    $this->assertIdentical(multifield_type_get_fields('test'), array());
+    $this->assertIdentical(multifield_get_subfields(), array('test' => array($field_name1, $field_name2)));
+    $this->assertIdentical(multifield_type_has_subfields('test'), TRUE);
+    $this->assertIdentical(multifield_type_get_subfields('test'), array($field_name1, $field_name2));
+    $this->assertTrue(field_info_field_types('test'));
+    $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
+    $this->assertIdentical($schema, array(
+      'columns' => array(
+        $field_name1 . '_value' => array(
+          'type' => 'int',
+          'size' => 'medium',
+          'not null' => FALSE,
+        ),
+        $field_name2 . '_value' => array(
+          'type' => 'int',
+          'size' => 'medium',
+          'not null' => FALSE,
+        ),
+        'id' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+      ),
+      'indexes' => array(
+        $field_name1 . '_value' => array($field_name1 . '_value'),
+        $field_name2 . '_value' => array($field_name2 . '_value'),
+        'id' => array('id'),
+      ),
+    ));
 
     multifield_delete($multifield);
 
@@ -51,7 +165,7 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
     $this->assertIdentical(multifield_get_subfields(), array());
     $this->assertIdentical(multifield_type_has_subfields('test'), FALSE);
     $this->assertIdentical(multifield_type_get_subfields('test'), array());
-    $this->assertIdentical(field_info_field_types('test'), NULL);
+    $this->assertFalse(field_info_field_types('test'));
     $schema = module_invoke('multifield', 'field_schema', array('type' => 'test'));
     $this->assertIdentical($schema, array());
   }
