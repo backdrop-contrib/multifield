@@ -363,7 +363,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
       $instance['required'] = 0;
     }
     $subitems = isset($pseudo_entity->{$field_name}[LANGUAGE_NONE]) ? $pseudo_entity->{$field_name}[LANGUAGE_NONE] : array();
-    $element += field_default_form('multifield', $pseudo_entity, $subfield, $instance, $langcode, $subitems, $element, $form_state, 0);
+    $element += field_default_form('multifield', $pseudo_entity, $subfield, $instance, LANGUAGE_NONE, $subitems, $element, $form_state, 0);
   }
   //field_attach_form('multifield', $pseudo_entity, $element, $form_state, $langcode);
 
