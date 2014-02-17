@@ -171,7 +171,7 @@ function _multifield_field_attach_form_validate($entity_type, $entity) {
 function multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   // Run each sub-field through hook_field_presave().
   foreach ($items as $delta => $item) {
-    if (empty($item['id'])) {
+    if (empty($item['id']) && !empty($entity)) {
       $item['id'] = multifield_get_next_id();
     }
     $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
@@ -404,7 +404,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     '#attributes' => array(
       'class' => array('remove-button', 'delta-' . $delta),
     ),
-    '#access' => $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED,
+    '#access' => $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED && !empty($element['#entity']),
   );
 
   //$form['#validate'][] = 'multifield_field_widget_validate';
