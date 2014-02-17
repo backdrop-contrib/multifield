@@ -169,11 +169,14 @@ function _multifield_field_attach_form_validate($entity_type, $entity) {
  * Implements hook_field_presave().
  */
 function multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  // Run each sub-field through hook_field_presave().
   foreach ($items as $delta => $item) {
+    // If an ID is not yes assigned, add one, unless this hook is invoked
+    // from the default value widget on the field instance (empty $entity).
     if (empty($item['id']) && !empty($entity)) {
       $item['id'] = multifield_get_next_id();
     }
+
+    // Run each sub-field through hook_field_presave().
     $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
     // field_attach_presave() is safe to call directly, yay!
     field_attach_presave('multifield', $pseudo_entity);
@@ -234,6 +237,12 @@ function multifield_field_is_empty($item, $field) {
  * Implements hook_field_insert().
  */
 function multifield_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  // Because field default values are loaded after hook_field_presave() is run,
+  // manually call it again if a default value was used.
+  if (!empty($instance['default_value']) && $items === $instance['default_value']) {
+    multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, $items);
+  }
+
   //array_walk($items, 'multifield_item_unserialize', $field);
 
   // Run each sub-field through hook_field_insert().
@@ -346,6 +355,7 @@ function multifield_field_widget_info() {
  */
 function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $item = isset($items[$delta]) ? $items[$delta] : array();
+  $is_default_value_widget = empty($element['#entity']);
 
   $element['#parents'] = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language'], $element['#delta']));
 
@@ -362,7 +372,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     // If a subfield is required, but this is not the first delta, or this
     // widget it being used in the default value form for the multifield, then
     // disable the subfield's requirement flag.
-    if ($instance['required'] && ($delta > 0 || empty($element['#entity']))) {
+    if ($instance['required'] && ($delta > 0 || $is_default_value_widget)) {
       $instance['required'] = 0;
     }
     $subitems = isset($pseudo_entity->{$field_name}[LANGUAGE_NONE]) ? $pseudo_entity->{$field_name}[LANGUAGE_NONE] : array();
@@ -404,7 +414,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     '#attributes' => array(
       'class' => array('remove-button', 'delta-' . $delta),
     ),
-    '#access' => $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED && !empty($element['#entity']),
+    '#access' => $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED && !$is_default_value_widget,
   );
 
   //$form['#validate'][] = 'multifield_field_widget_validate';
