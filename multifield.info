@@ -6,7 +6,6 @@ dependencies[] = ctools
 dependencies[] = field
 configure = admin/structure/multifield
 files[] = MultifieldEntityController.php
-files[] = plugins/export_ui/multifield_export_ui.class.php
 files[] = tests/MultifieldAdministrationTestCase.test
 files[] = tests/MultifieldEntityTranslationTestCase.test
 files[] = tests/MultifieldUnitTestCase.test
