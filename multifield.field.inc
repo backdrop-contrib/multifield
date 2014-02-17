@@ -34,6 +34,9 @@ function multifield_field_info() {
         'description' => $multifield->description,
         'default_widget' => 'multifield_default',
         'default_formatter' => 'multifield_default',
+        'settings' => array(
+          'entity_translation_sync' => array('id'),
+        ),
       );
     }
   }
