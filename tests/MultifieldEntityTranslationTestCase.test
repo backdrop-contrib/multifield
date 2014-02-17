@@ -5,8 +5,8 @@ class MultifieldEntityTranslationTestCase extends DrupalWebTestCase {
 
   public static function getInfo() {
     return array(
-      'name' => 'Multifield entity translation',
-      'description' => 'Tests translating a multifield.',
+      'name' => 'Entity Translation integration',
+      'description' => 'Tests multifield integration with the Entity Translation module.',
       'group' => 'Multifield',
       'dependencies' => array('entity_translation'),
     );

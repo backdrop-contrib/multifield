@@ -236,6 +236,7 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
               ),
             ),
           ),
+          // Default values should not have an ID.
           'id' => NULL,
           'actions' => array(
             'remove_button' => 'Remove',
@@ -266,6 +267,7 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
           ),
         ),
       ),
+      // Default value should now have a valid ID.
       'id' => 1,
       'field_text1_value' => 'Default value',
       'field_text1_format' => NULL,
