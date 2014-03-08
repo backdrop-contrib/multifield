@@ -103,12 +103,12 @@ class MultifieldEntityTranslationTestCase extends DrupalWebTestCase {
 
     $node = node_load($node->nid, NULL, TRUE);
     $expected = array();
+    $expected['en'][0]['id'] = '1';
     $expected['en'][0]['field_text1'][LANGUAGE_NONE][0] = array('value' => 'English1', 'format' => NULL, 'safe_value' => 'English1');
     $expected['en'][0]['field_text2'][LANGUAGE_NONE][0] = array('value' => 'English2', 'format' => NULL, 'safe_value' => 'English2');
-    $expected['en'][0]['id'] = '1';
+    $expected['es'][0]['id'] = '1';
     $expected['es'][0]['field_text1'][LANGUAGE_NONE][0] = array('value' => 'Spanish1', 'format' => NULL, 'safe_value' => 'Spanish1');
     $expected['es'][0]['field_text2'][LANGUAGE_NONE][0] = array('value' => 'Spanish2', 'format' => NULL, 'safe_value' => 'Spanish2');
-    $expected['es'][0]['id'] = '1';
     $this->assertIdentical($node->field_multifield, $expected);
   }
 }

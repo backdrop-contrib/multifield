@@ -315,23 +315,15 @@ function multifield_field_create_instance($instance) {
   }
 }
 
-function _multifield_field_item_to_entity($machine_name, array $item, array $additional = array()) {
-  $pseudo_entity = new stdClass();
-  $pseudo_entity->id = !empty($item['id']) ? $item['id'] : NULL;
+function _multifield_field_item_to_entity($machine_name, array $item) {
+  $pseudo_entity = (object) ($item + array('id' => NULL));
   $pseudo_entity->type = $machine_name;
-  foreach (array_intersect_key($item, field_info_instances('multifield', $machine_name)) as $field => $values) {
-    $pseudo_entity->{$field} = $item[$field];
-  }
-  foreach ($additional as $key => $value) {
-    $pseudo_entity->{$key} = $value;
-  }
   return $pseudo_entity;
 }
 
 function _multifield_field_entity_to_item($pseudo_entity) {
   $item = (array) $pseudo_entity;
-  $item = array_intersect_key($item, field_info_instances('multifield', $pseudo_entity->type));
-  $item['id'] = $pseudo_entity->id;
+  unset($item['type']);
   //$item['#pseudo_entity'] = $pseudo_entity;
   return $item;
 }
