@@ -351,7 +351,7 @@ function multifield_item_unserialize(&$item, $delta, $multifield) {
 function multifield_item_serialize(&$item, $delta, $multifield) {
   // Serialize the multifield values into separate columns for saving into the
   // field table.
-  foreach (field_info_instances('multifield', $multifield['type']) as $subfield_name => $subfield_instance) {
+  foreach (multifield_type_get_subfields($multifield['type']) as $subfield_name) {
     $subfield = field_info_field($subfield_name);
     foreach ($subfield['columns'] as $column => $details) {
       if (isset($item[$subfield_name][LANGUAGE_NONE][0][$column])) {

@@ -47,20 +47,18 @@ function multifield_field_info() {
  * Implements hook_field_load().
  */
 function multifield_field_load($entity_type, $entities, $field, $instances, $langcode, &$items, $age) {
-  foreach (multifield_type_get_subfields($field['type']) as $field_name) {
-    $subfield = field_info_field($field_name);
-    foreach (array_keys($subfield['columns']) as $column) {
-      foreach ($entities as $id => $entity) {
-        array_walk($items[$id], 'multifield_item_unserialize', $field);
-      }
-    }
+  foreach ($entities as $id => $entity) {
+    array_walk($items[$id], 'multifield_item_unserialize', $field);
+  }
 
+  foreach (multifield_type_get_subfields($field['type']) as $subfield_name) {
+    $subfield = field_info_field($subfield_name);
     // Once the subfields have been imploded into a proper structure, we need
     // to filter out 'empty' values.
     foreach (array_keys($entities) as $id) {
       foreach ($items[$id] as $delta => $item) {
-        if (!empty($item[$field_name][LANGUAGE_NONE])) {
-          $items[$id][$delta][$field_name][LANGUAGE_NONE] = _field_filter_items($subfield, $item[$field_name][LANGUAGE_NONE]);
+        if (!empty($item[$subfield_name][LANGUAGE_NONE])) {
+          $items[$id][$delta][$subfield_name][LANGUAGE_NONE] = _field_filter_items($subfield, $item[$subfield_name][LANGUAGE_NONE]);
         }
       }
     }
