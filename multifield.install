@@ -43,12 +43,6 @@ function multifield_schema() {
       'primary key' => 'mfid',
       'identifier' => 'multifield',
       'default hook' => 'multifield_default_multifield',
-      'api' => array(
-        'owner' => 'multifield',
-        'api' => 'multifield',
-        'minimum_version' => 1,
-        'current_version' => 1,
-      ),
       'cache defaults' => TRUE,
       'load callback' => 'multifield_load',
       'load all callback' => 'multifield_load_all',
