@@ -328,8 +328,8 @@ function _multifield_field_entity_to_item($pseudo_entity) {
   return $item;
 }
 
-function multifield_item_unserialize(&$item, $delta, $multifield) {
-  foreach (multifield_type_get_subfields($multifield['type']) as $subfield_name) {
+function multifield_item_unserialize(&$item, $delta, $machine_name) {
+  foreach (multifield_type_get_subfields($machine_name) as $subfield_name) {
     $subfield = field_info_field($subfield_name);
     foreach (array_keys($subfield['columns']) as $column) {
       if (array_key_exists($subfield_name . '_' . $column, $item)) {
@@ -340,10 +340,10 @@ function multifield_item_unserialize(&$item, $delta, $multifield) {
   }
 }
 
-function multifield_item_serialize(&$item, $delta, $multifield) {
+function multifield_item_serialize(&$item, $delta, $machine_name) {
   // Serialize the multifield values into separate columns for saving into the
   // field table.
-  foreach (multifield_type_get_subfields($multifield['type']) as $subfield_name) {
+  foreach (multifield_type_get_subfields($machine_name) as $subfield_name) {
     $subfield = field_info_field($subfield_name);
     foreach ($subfield['columns'] as $column => $details) {
       if (isset($item[$subfield_name][LANGUAGE_NONE][0][$column])) {
@@ -515,4 +515,11 @@ function multifield_admin_menu_map() {
   );
 
   return $map;
+}
+
+/**
+ * Determine the multifield type given a field.
+ */
+function multifield_extract_multifield_machine_name(array $field) {
+  return $field['type'];
 }

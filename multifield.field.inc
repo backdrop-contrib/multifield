@@ -47,11 +47,13 @@ function multifield_field_info() {
  * Implements hook_field_load().
  */
 function multifield_field_load($entity_type, $entities, $field, $instances, $langcode, &$items, $age) {
+  $machine_name = multifield_extract_multifield_machine_name($field);
+
   foreach ($entities as $id => $entity) {
-    array_walk($items[$id], 'multifield_item_unserialize', $field);
+    array_walk($items[$id], 'multifield_item_unserialize', $machine_name);
   }
 
-  foreach (multifield_type_get_subfields($field['type']) as $subfield_name) {
+  foreach (multifield_type_get_subfields($machine_name) as $subfield_name) {
     $subfield = field_info_field($subfield_name);
     // Once the subfields have been imploded into a proper structure, we need
     // to filter out 'empty' values.
@@ -67,7 +69,7 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
   $pseudo_entities = array();
   foreach ($entities as $id => $entity) {
     foreach ($items[$id] as $delta => $item) {
-      $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+      $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
       $pseudo_entity->delta = $delta;
       $pseudo_entity->parent_id = $id;
       $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
@@ -105,12 +107,13 @@ function multifield_field_access($op, $field, $entity_type, $entity, $account) {
   // We should return FALSE if all the subfields' field_access() checks all
   // return FALSE.
   if ($field['module'] == 'multifield') {
-    $subfield_names = multifield_type_get_subfields($field['type']);
+    $machine_name = multifield_extract_multifield_machine_name($field);
+    $subfield_names = multifield_type_get_subfields($machine_name);
     $subfield_access = array();
 
     if (!empty($entity) && $items = field_get_items($entity_type, $entity, $field['field_name'])) {
       foreach ($items as $delta => $item) {
-        $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+        $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
         foreach ($subfield_names as $subfield_name) {
           $subfield = field_info_field($subfield_name);
           $subfield_access[$subfield_name . ':' . $delta] = field_access($op, $subfield, 'multifield', $pseudo_entity, $account);
@@ -135,8 +138,10 @@ function multifield_field_access($op, $field, $entity_type, $entity, $account) {
  * Implements hook_field_validate().
  */
 function multifield_field_validate($entity_type, $entity, $field, $instance, $langcode, $items, &$errors) {
+  $machine_name = multifield_extract_multifield_machine_name($field);
+
   foreach ($items as $delta => $item) {
-    $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
     //_multifield_field_attach_form_validate('multifield', $pseudo_entity);
     //$items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
@@ -172,6 +177,8 @@ function _multifield_field_attach_form_validate($entity_type, $entity) {
  * Implements hook_field_presave().
  */
 function multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $machine_name = multifield_extract_multifield_machine_name($field);
+
   foreach ($items as $delta => $item) {
     // If an ID is not yes assigned, add one, unless this hook is invoked
     // from the default value widget on the field instance (empty $entity).
@@ -180,7 +187,7 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
     }
 
     // Run each sub-field through hook_field_presave().
-    $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
     // field_attach_presave() is safe to call directly, yay!
     field_attach_presave('multifield', $pseudo_entity);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
@@ -188,7 +195,7 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
 
   // Serialize the multifield values into separate columns for saving into the
   // field table.
-  array_walk($items, 'multifield_item_serialize', $field);
+  array_walk($items, 'multifield_item_serialize', $machine_name);
 }
 
 function multifield_field_attach_submit($entity_type, $entity, $form, &$form_state) {
@@ -223,41 +230,44 @@ function _multifield_field_attach_submit($entity_type, $entity, $form, &$form_st
  * Implements hook_field_is_empty().
  */
 function multifield_field_is_empty($item, $field) {
-  $instances = field_info_instances('multifield', $field['type']);
-  foreach ($instances as $field_name => $instance) {
-    if (!empty($item[$field_name])) {
-      $subfield = field_info_field($field_name);
-      foreach ($item[$field_name] as $langcode => $subfield_items) {
-        $item[$field_name][$langcode] = _field_filter_items($subfield, $subfield_items);
+  $machine_name = multifield_extract_multifield_machine_name($field);
+  $subinstances = field_info_instances('multifield', $machine_name);
+  foreach ($subinstances as $subfield_name => $subinstance) {
+    if (!empty($item[$subfield_name])) {
+      $subfield = field_info_field($subfield_name);
+      foreach ($item[$subfield_name] as $langcode => $subfield_items) {
+        $item[$subfield_name][$langcode] = _field_filter_items($subfield, $subfield_items);
       }
-      $item[$field_name] = array_filter($item[$field_name]);
+      $item[$subfield_name] = array_filter($item[$subfield_name]);
     }
   }
-  return !array_filter(array_intersect_key($item, $instances));
+  return !array_filter(array_intersect_key($item, $subinstances));
 }
 
 /**
  * Implements hook_field_insert().
  */
 function multifield_field_insert($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $machine_name = multifield_extract_multifield_machine_name($field);
+
   // Because field default values are loaded after hook_field_presave() is run,
   // manually call it again if a default value was used.
   if (!empty($instance['default_value']) && $items === $instance['default_value']) {
     multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, $items);
   }
 
-  //array_walk($items, 'multifield_item_unserialize', $field);
+  //array_walk($items, 'multifield_item_unserialize', $machine_name);
 
   // Run each sub-field through hook_field_insert().
   foreach ($items as $delta => $item) {
-    $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
     _multifield_field_attach_insert('multifield', $pseudo_entity);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 
   // Because this is invoked right prior to field storage writing, we need to
   // re-serialize the field values.
-  array_walk($items, 'multifield_item_serialize', $field);
+  array_walk($items, 'multifield_item_serialize', $machine_name);
 
   multifield_update_maximum_id($items);
 }
@@ -282,18 +292,19 @@ function _multifield_field_attach_insert($entity_type, $entity) {
  * Implements hook_field_update().
  */
 function multifield_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
-  //array_walk($items, 'multifield_item_unserialize', $field);
+  $machine_name = multifield_extract_multifield_machine_name($field);
+  //array_walk($items, 'multifield_item_unserialize', $machine_name);
 
   // Run each sub-field through hook_field_update().
   foreach ($items as $delta => $item) {
-    $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
     _multifield_field_attach_update('multifield', $pseudo_entity);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 
   // Because this is invoked right prior to field storage writing, we need to
   // re-serialize the field values.
-  array_walk($items, 'multifield_item_serialize', $field);
+  array_walk($items, 'multifield_item_serialize', $machine_name);
 
   multifield_update_maximum_id($items);
 }
@@ -317,10 +328,12 @@ function _multifield_field_attach_update($entity_type, $entity) {
  * Implements hook_field_delete().
  */
 function multifield_field_delete($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $machine_name = multifield_extract_multifield_machine_name($field);
+
   // Run each sub-field through hook_field_delete().
   $ids = array();
   foreach ($items as $delta => $item) {
-    $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+    $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
     $ids[] = $pseudo_entity->id;
     _multifield_field_attach_delete('multifield', $pseudo_entity);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
@@ -357,6 +370,7 @@ function multifield_field_widget_info() {
  * Implements hook_field_widget_form().
  */
 function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $machine_name = multifield_extract_multifield_machine_name($field);
   $item = isset($items[$delta]) ? $items[$delta] : array();
   $is_default_value_widget = empty($element['#entity']);
 
@@ -364,13 +378,13 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
 
   // Force the ID of the pseudo entity to be NULL, to prevent modules like
   // entity reference from trying to use it.
-  $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+  $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
   $pseudo_entity->id = NULL;
 
   // Rather than calling field_attach_form() here, we have to limit these
   // sub-field widgets to only one cardinality value. So manually invoke
   // field_default_form() for each one.
-  foreach (field_info_instances('multifield', $field['type']) as $field_name => $instance) {
+  foreach (field_info_instances('multifield', $machine_name) as $field_name => $instance) {
     $subfield = field_info_field($field_name);
     $subfield['cardinality'] = 1;
     // If a subfield is required, but this is not the first delta, or this
@@ -634,6 +648,7 @@ function multifield_field_prepare_view($entity_type, $entities, $field, $instanc
     }
   }
 
+  $machine_name = multifield_extract_multifield_machine_name($field);
   $view_mode_pseudo_entities = array();
 
   foreach ($entities as $id => $entity) {
@@ -641,7 +656,7 @@ function multifield_field_prepare_view($entity_type, $entities, $field, $instanc
     if (!$instance_display['type'] !== 'hidden') {
       $view_mode = !empty($display['settings']['view_mode']) ? $display['settings']['view_mode'] : 'default';
       foreach ($items[$id] as $delta => $item) {
-        $pseudo_entity = _multifield_field_item_to_entity($field['type'], $item);
+        $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
         $pseudo_entity->delta = $delta;
         $pseudo_entity->parent_id = $id;
         $view_mode_pseudo_entities[$view_mode][$pseudo_entity->id] = $pseudo_entity;
