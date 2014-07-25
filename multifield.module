@@ -521,5 +521,7 @@ function multifield_admin_menu_map() {
  * Determine the multifield type given a field.
  */
 function multifield_extract_multifield_machine_name(array $field) {
-  return $field['type'];
+  if ($field['module'] == 'multifield') {
+    return $field['type'];
+  }
 }
