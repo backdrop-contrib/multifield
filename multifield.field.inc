@@ -40,6 +40,7 @@ function multifield_field_info() {
       );
     }
   }
+
   return $info;
 }
 
@@ -372,7 +373,8 @@ function multifield_field_widget_info() {
 function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $machine_name = multifield_extract_multifield_machine_name($field);
   $item = isset($items[$delta]) ? $items[$delta] : array();
-  $is_default_value_widget = empty($element['#entity']);
+  $entity = $element['#entity'];
+  $is_default_value_widget = empty($entity);
 
   $element['#parents'] = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language'], $element['#delta']));
 
@@ -384,19 +386,18 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
   // Rather than calling field_attach_form() here, we have to limit these
   // sub-field widgets to only one cardinality value. So manually invoke
   // field_default_form() for each one.
-  foreach (field_info_instances('multifield', $machine_name) as $field_name => $instance) {
-    $subfield = field_info_field($field_name);
+  foreach (field_info_instances('multifield', $machine_name) as $subfield_name => $subinstance) {
+    $subfield = field_info_field($subfield_name);
     $subfield['cardinality'] = 1;
     // If a subfield is required, but this is not the first delta, or this
     // widget it being used in the default value form for the multifield, then
     // disable the subfield's requirement flag.
-    if ($instance['required'] && ($delta > 0 || $is_default_value_widget)) {
-      $instance['required'] = 0;
+    if ($subinstance['required'] && ($delta > 0 || $is_default_value_widget)) {
+      $subinstance['required'] = 0;
     }
-    $subitems = isset($pseudo_entity->{$field_name}[LANGUAGE_NONE]) ? $pseudo_entity->{$field_name}[LANGUAGE_NONE] : array();
-    $element += field_default_form('multifield', $pseudo_entity, $subfield, $instance, LANGUAGE_NONE, $subitems, $element, $form_state, 0);
+    $subitems = isset($pseudo_entity->{$subfield_name}[LANGUAGE_NONE]) ? $pseudo_entity->{$subfield_name}[LANGUAGE_NONE] : array();
+    $element += field_default_form('multifield', $pseudo_entity, $subfield, $subinstance, LANGUAGE_NONE, $subitems, $element, $form_state, 0);
   }
-  //field_attach_form('multifield', $pseudo_entity, $element, $form_state, $langcode);
 
   // If this multifield itself has a cardinality of one value, and this is not
   // being used for the field default value form, then set the wrapping element
@@ -435,10 +436,43 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     '#access' => $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED && !$is_default_value_widget,
   );
 
+  _multifield_field_attach_form('multifield', $pseudo_entity, $element, $form_state, LANGUAGE_NONE);
+  // Restore the internal entity type and bundle properties.
+  $element['#entity_type'] = $instance['entity_type'];
+  $element['#entity'] = $entity;
+  $element['#bundle'] = $instance['bundle'];
+
   //$form['#validate'][] = 'multifield_field_widget_validate';
   //$form['#multifields'][] = $element['#parents'];
 
   return $element;
+}
+
+function _multifield_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode = NULL, $options = array()) {
+  // Validate $options since this is a new parameter added after Drupal 7 was
+  // released.
+  //$options = is_array($options) ? $options : array();
+
+  // Set #parents to 'top-level' by default.
+  //$form += array('#parents' => array());
+
+  // If no language is provided use the default site language.
+  //$options['language'] = field_valid_language($langcode);
+  //$form += (array) _field_invoke_default('form', $entity_type, $entity, $form, $form_state, $options);
+
+  // Add custom weight handling.
+  list($id, $vid, $bundle) = entity_extract_ids($entity_type, $entity);
+  $form['#pre_render'][] = '_field_extra_fields_pre_render';
+  $form['#entity_type'] = $entity_type;
+  $form['#entity'] = $entity;
+  $form['#bundle'] = $bundle;
+
+  // Let other modules make changes to the form.
+  // Avoid module_invoke_all() to let parameters be taken by reference.
+  foreach (module_implements('field_attach_form') as $module) {
+    $function = $module . '_field_attach_form';
+    $function($entity_type, $entity, $form, $form_state, $langcode);
+  }
 }
 
 function multifield_field_widget_validate($element, &$form_state) {
