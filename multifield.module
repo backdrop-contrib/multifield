@@ -395,6 +395,14 @@ function _multifield_generate_unique_id() {
   return $id;
 }
 
+function multifield_items_extract_ids(array $items) {
+  $ids = array();
+  foreach ($items as $item) {
+    $ids[] = $item['id'];
+  }
+  return $ids;
+}
+
 /**
  * Implements hook_form_FORM_ID_alter() for field_ui_field_overview_form().
  */

@@ -353,15 +353,15 @@ function multifield_field_delete($entity_type, $entity, $field, $instance, $lang
   $machine_name = multifield_extract_multifield_machine_name($field);
 
   // Run each sub-field through hook_field_delete().
-  $ids = array();
   foreach ($items as $delta => $item) {
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
-    $ids[] = $pseudo_entity->id;
     _multifield_field_attach_delete('multifield', $pseudo_entity);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 
-  entity_get_controller('multifield')->resetCache($ids);
+  if ($ids = multifield_items_extract_ids($items)) {
+    entity_get_controller('multifield')->resetCache($ids);
+  }
 }
 
 function _multifield_field_attach_delete($entity_type, $entity) {
