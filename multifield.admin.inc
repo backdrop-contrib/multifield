@@ -34,15 +34,17 @@ function multifield_list_page() {
         break;
     }
 
-    $fields = _multifield_get_usage_summary($multifield->machine_name, TRUE);
+    $fields = _multifield_get_usage_summary($machine_name, TRUE);
     $row['data'][] = !empty($fields) ? theme('item_list', array('items' => $fields)) : t('None');
 
     $base = 'admin/structure/multifield/manage/' . $machine_name;
     $operations = array();
-    $operations['edit'] = array(
-      'title' => t('Edit'),
-      'href' => $base,
-    );
+    if (multifield_edit_access($multifield)) {
+      $operations['edit'] = array(
+        'title' => t('Edit'),
+        'href' => $base,
+      );
+    }
     if (module_exists('field_ui')) {
       $operations['manage fields'] = array(
         'title' => t('Manage subfields'),
@@ -53,11 +55,18 @@ function multifield_list_page() {
         'href' => $base . '/display',
       );
     }
-    $operations['delete'] = array(
-      'title' => t('Delete'),
-      'href' => $base . '/delete',
-    );
-    $row['data'][] = theme('links', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline', 'nowrap'))));
+    if (multifield_edit_access($multifield)) {
+      $operations['delete'] = array(
+        'title' => t('Delete'),
+        'href' => $base . '/delete',
+      );
+    }
+    if (!empty($operations)) {
+      $row['data'][] = theme('links', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline', 'nowrap'))));
+    }
+    else {
+      $row['data'][] = '';
+    }
 
     $rows[] = $row;
   }
