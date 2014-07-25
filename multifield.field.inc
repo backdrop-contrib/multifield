@@ -35,6 +35,7 @@ function multifield_field_info() {
         'default_widget' => 'multifield_default',
         'default_formatter' => 'multifield_default',
         'settings' => array(
+          'hide_blank_items' => TRUE,
           'entity_translation_sync' => array('id'),
         ),
       );
@@ -42,6 +43,26 @@ function multifield_field_info() {
   }
 
   return $info;
+}
+
+/**
+ * Implements hook_field_settings_form().
+ */
+function multifield_field_settings_form($field, $instance) {
+  $form['hide_blank_items'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Hide blank items'),
+    '#default_value' => $field['settings']['hide_blank_items'],
+    '#description' => t("A blank item is always added to any multivalued field's form. If checked, any additional blank items are hidden except of the first item which is always shown."),
+    '#weight' => 10,
+    '#states' => array(
+      // Show this setting only if the cardinality is unlimited.
+      'visible' => array(
+        ':input[name="field[cardinality]"]' => array('value' => (string) FIELD_CARDINALITY_UNLIMITED),
+      ),
+    ),
+  );
+  return $form;
 }
 
 /**
@@ -368,6 +389,21 @@ function multifield_field_widget_info() {
 }
 
 /**
+ * Implements hook_field_attach_form().
+ */
+function multifield_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode) {
+  foreach (field_info_instances($entity_type, $form['#bundle']) as $field_name => $instance) {
+    $field = field_info_field($field_name);
+    if (multifield_extract_multifield_machine_name($field) && $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED && !empty($field['settings']['hide_blank_items']) && field_access('edit', $field, $entity_type) ) {
+      $element_langcode = $form[$field_name]['#language'];
+      if ($form[$field_name][$element_langcode]['#max_delta'] > 0) {
+        $form[$field_name][$element_langcode]['#max_delta']--;
+      }
+    }
+  }
+}
+
+/**
  * Implements hook_field_widget_form().
  */
 function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
@@ -375,6 +411,21 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
   $item = isset($items[$delta]) ? $items[$delta] : array();
   $entity = $element['#entity'];
   $is_default_value_widget = empty($entity);
+
+  if ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED && !empty($field['settings']['hide_blank_items'])) {
+    $field_state = field_form_get_state($element['#field_parents'], $element['#field_name'], $element['#language'], $form_state);
+    if ($delta == $field_state['items_count'] && $delta > 0) {
+      // Do not add a blank item. Also see multifield_field_attach_form() for
+      // correcting #max_delta.
+      return FALSE;
+    }
+    elseif ($field_state['items_count'] == 0) {
+      // We show one item, so also specify that as item count. So when the
+      // add button is pressed the item count will be 2 and we show to items.
+      $field_state['items_count'] = 1;
+    }
+    field_form_set_state($element['#field_parents'], $element['#field_name'], $element['#language'], $form_state, $field_state);
+  }
 
   $element['#parents'] = array_merge($element['#field_parents'], array($element['#field_name'], $element['#language'], $element['#delta']));
 
