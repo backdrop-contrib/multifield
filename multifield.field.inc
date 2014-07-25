@@ -469,6 +469,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     //    drupal_get_path('module', 'multifield') . '/multifield.field.css' => array(),
     //  ),
     //),
+    '#pre_render' => array('_multifield_show_only_if_visible_children'),
   );
   $element['actions']['remove_button'] = array(
     '#type' => 'submit',
@@ -497,6 +498,13 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
   //$form['#multifields'][] = $element['#parents'];
 
   return $element;
+}
+
+function _multifield_show_only_if_visible_children($elements) {
+  if (!element_get_visible_children($elements)) {
+    $elements['#printed'] = TRUE;
+  }
+  return $elements;
 }
 
 function _multifield_field_attach_form($entity_type, $entity, &$form, &$form_state, $langcode = NULL, $options = array()) {
