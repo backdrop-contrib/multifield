@@ -259,6 +259,25 @@ class MultifieldUnitTestCase extends DrupalWebTestCase {
 
     // Check that saving a node object without provide a multifield value used
     // the default value, but added a proper ID value.
+    $items = field_get_items('node', $node, 'field_multifield');
+    $this->assertIdentical($items[0], array(
+      'field_text1' => array(
+        LANGUAGE_NONE => array(
+          0 => array(
+            'value' => 'Default value',
+            'format' => NULL,
+          ),
+        ),
+      ),
+      'id' => 1,
+      'actions' => array(
+        'remove_button' => 'Remove',
+      ),
+      'field_text1_value' => 'Default value',
+      'field_text1_format' => NULL,
+    ));
+
+    // Check the value after doing a reload.
     $node = node_load($node->nid, NULL, TRUE);
     $items = field_get_items('node', $node, 'field_multifield');
     $this->assertIdentical($items[0], array(
