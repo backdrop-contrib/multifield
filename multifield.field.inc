@@ -25,10 +25,22 @@
  */
 function multifield_field_info() {
   $info = array();
+
+  $info['multifield'] = array(
+    'label' => t('Multifield'),
+    'default_widget' => 'multifield_default',
+    'default_formatter' => 'multifield_default',
+    'settings' => array(
+      'hide_blank_items' => TRUE,
+      'entity_translation_sync' => array('id'),
+    ),
+  );
+
+  // Deprecated field types from the CTools exports.
   $multifields = multifield_load_all();
   foreach ($multifields as $machine_name => $multifield) {
     // Only show this multifield as an option to create if it has subfields.
-    if (multifield_type_has_subfields($machine_name)) {
+    if (empty($multifield->locked) && multifield_type_has_subfields($machine_name)) {
       $info[$machine_name] = array(
         'label' => $multifield->label,
         'description' => $multifield->description,
@@ -38,6 +50,7 @@ function multifield_field_info() {
           'hide_blank_items' => TRUE,
           'entity_translation_sync' => array('id'),
         ),
+        'no_ui' => TRUE,
       );
     }
   }
@@ -128,8 +141,7 @@ function _multifield_field_attach_load($entity_type, $entities, $age = FIELD_LOA
 function multifield_field_access($op, $field, $entity_type, $entity, $account) {
   // We should return FALSE if all the subfields' field_access() checks all
   // return FALSE.
-  if ($field['module'] == 'multifield') {
-    $machine_name = multifield_extract_multifield_machine_name($field);
+  if ($machine_name = multifield_extract_multifield_machine_name($field)) {
     $subfield_names = multifield_type_get_subfields($machine_name);
     $subfield_access = array();
 
@@ -375,15 +387,10 @@ function _multifield_field_attach_delete($entity_type, $entity) {
  * Implements hook_field_widget_info().
  */
 function multifield_field_widget_info() {
-  $info = array();
-  $multifields = multifield_load_all();
-
-  if (!empty($multifields)) {
-    $info['multifield_default'] = array(
-      'label' => t('Default'),
-      'field types' => array_keys($multifields),
-    );
-  }
+  $info['multifield_default'] = array(
+    'label' => t('Default'),
+    'field types' => array_keys(multifield_field_info()),
+  );
 
   return $info;
 }
@@ -666,18 +673,13 @@ function multifield_field_widget_remove_item_submit($form, &$form_state) {
  * Implements hook_field_formatter_view().
  */
 function multifield_field_formatter_info() {
-  $info = array();
-  $multifields = multifield_load_all();
-
-  if (!empty($multifields)) {
-    $info['multifield_default'] = array(
-      'label' => t('Default'),
-      'field types' => array_keys($multifields),
-      'settings' => array(
-        'view_mode' => 'default',
-      ),
-    );
-  }
+  $info['multifield_default'] = array(
+    'label' => t('Default'),
+    'field types' => array_keys(multifield_field_info()),
+    'settings' => array(
+      'view_mode' => 'default',
+    ),
+  );
 
   return $info;
 }

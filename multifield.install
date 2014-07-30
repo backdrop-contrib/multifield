@@ -63,7 +63,8 @@ function multifield_field_schema($field) {
   // Use the same query from multifield_type_get_subfields() but since
   // we want to ensure we're using the most current data, the function isn't
   // used.
-  $field_names = db_query("SELECT fci.field_name FROM {field_config_instance} fci INNER JOIN {field_config} fc ON fc.id = fci.field_id WHERE fc.active = 1 AND fc.storage_active = 1 AND fc.deleted = 0 AND fci.deleted = 0 AND fci.entity_type = 'multifield' AND fci.bundle = :bundle", array(':bundle' => $field['type']))->fetchCol();
+  $machine_name = multifield_extract_multifield_machine_name($field);
+  $field_names = db_query("SELECT fci.field_name FROM {field_config_instance} fci INNER JOIN {field_config} fc ON fc.id = fci.field_id WHERE fc.active = 1 AND fc.storage_active = 1 AND fc.deleted = 0 AND fci.deleted = 0 AND fci.entity_type = 'multifield' AND fci.bundle = :bundle", array(':bundle' => $machine_name))->fetchCol();
   if (empty($field_names)) {
     return $schema;
   }
