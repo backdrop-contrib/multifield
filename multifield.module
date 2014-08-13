@@ -27,11 +27,12 @@ function multifield_menu() {
     'access arguments' => array('administer multifield'),
     'file' => 'multifield.admin.inc',
   );
+  // Disable the add form now that the 'Multifield' field type exists.
   $info['admin/structure/multifield/add'] = array(
     'title' => 'Add multifield',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('multifield_edit_form'),
-    'access arguments' => array('administer multifield'),
+    'access callback' => FALSE,
     'type' => MENU_LOCAL_ACTION,
     'file' => 'multifield.admin.inc',
   );
