@@ -22,10 +22,11 @@ function multifield_field_default_field_bases_alter(&$fields) {
 function multifield_features_pipe_field_base_alter(&$pipe, $data, $export) {
   foreach ($data as $field_name) {
     // Export a multifield's subfields along with the field base.
-    $field = field_info_field($field_name);
-    if ($machine_name = multifield_extract_multifield_machine_name($field)) {
-      foreach (multifield_type_get_subfields($machine_name) as $subfield_name) {
-        $pipe['field_instance'][] = "multifield-{$machine_name}-{$subfield_name}";
+    if ($field = field_info_field($field_name)) {
+      if ($machine_name = multifield_extract_multifield_machine_name($field)) {
+        foreach (multifield_type_get_subfields($machine_name) as $subfield_name) {
+          $pipe['field_instance'][] = "multifield-{$machine_name}-{$subfield_name}";
+        }
       }
     }
   }
