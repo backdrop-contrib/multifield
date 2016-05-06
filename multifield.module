@@ -456,23 +456,29 @@ function multifield_item_serialize(&$item, $delta, $machine_name) {
 }
 
 function multifield_get_next_id() {
+  $id = &multifield_get_maximum_id();
+  return ++$id;
+}
+
+function &multifield_get_maximum_id() {
   $id = &drupal_static(__FUNCTION__);
   if (!isset($id)) {
     $id = variable_get('multifield_max_id', 0);
   }
-  return ++$id;
+  return $id;
 }
 
 function multifield_update_maximum_id(array $items) {
   if (!empty($items)) {
+    $max_id = &multifield_get_maximum_id();
     $ids = array();
     foreach ($items as $item) {
       $ids[] = $item['id'];
     }
     $largest_id = max($ids);
-    if ($largest_id > variable_get('multifield_max_id', 0)) {
+    if ($largest_id >= $max_id) {
+      $max_id = $largest_id;
       variable_set('multifield_max_id', $largest_id);
-      drupal_static_reset('multifield_get_next_id');
     }
   }
 }
