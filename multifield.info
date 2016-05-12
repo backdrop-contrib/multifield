@@ -9,6 +9,7 @@ files[] = MultifieldEntityController.php
 files[] = tests/MultifieldAdministrationTestCase.test
 files[] = tests/MultifieldDevelGenerateTestCase.test
 files[] = tests/MultifieldEntityTranslationTestCase.test
+files[] = tests/MultifieldFileUsageTestCase.test
 files[] = tests/MultifieldUnitTestCase.test
 test_dependencies[] = entity_translation
 test_dependencies[] = devel

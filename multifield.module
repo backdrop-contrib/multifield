@@ -440,6 +440,12 @@ function multifield_item_serialize(&$item, $delta, $machine_name) {
   foreach (multifield_type_get_subfields($machine_name) as $subfield_name) {
     $subfield = field_info_field($subfield_name);
     foreach ($subfield['columns'] as $column => $details) {
+      // If the subfield is empty, skip it.
+      if (empty($item[$subfield_name][LANGUAGE_NONE][0])) {
+        unset($item[$subfield_name . '_' . $column]);
+        continue;
+      }
+
       // @see field_sql_storage_field_storage_write()
       // @todo Should this be using array_key_exists() instead of isset()?
       if (!isset($item[$subfield_name][LANGUAGE_NONE][0][$column])) {
@@ -451,7 +457,6 @@ function multifield_item_serialize(&$item, $delta, $machine_name) {
       // multifield_field_insert() or multifield_field_update().
       $item[$subfield_name . '_' . $column] = &$item[$subfield_name][LANGUAGE_NONE][0][$column];
     }
-    //unset($item[$subfield_name]);
   }
 }
 

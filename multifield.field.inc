@@ -329,10 +329,17 @@ function multifield_field_update($entity_type, $entity, $field, $instance, $lang
   $machine_name = multifield_extract_multifield_machine_name($field);
   //array_walk($items, 'multifield_item_unserialize', $machine_name);
 
+  // Gather the original field values from the parent entity if it has them.
+  $original_items = isset($entity->original) ? field_get_items($entity_type, $entity->original, $field['field_name'], $langcode) : array();
+
   // Run each sub-field through hook_field_update().
   foreach ($items as $delta => $item) {
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
+    if (isset($original_items[$delta])) {
+      $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
+    }
     _multifield_field_attach_update('multifield', $pseudo_entity);
+    unset($pseudo_entity->original);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 
