@@ -10,7 +10,7 @@
  */
 function multifield_devel_generate($object, $field, $instance, $bundle) {
   $item = array();
-  $subbundle = $field['type'];
+  $subbundle = multifield_extract_multifield_machine_name($field);
   $subfield_instances = field_info_instances('multifield', $subbundle);
   $subobject = _multifield_field_item_to_entity($subbundle, $item);
 
