@@ -183,17 +183,6 @@ function multifield_delete($multifield) {
   multifield_cache_clear();
 }
 
-/**
- * Implements hook_multifield_delete() on behalf of field module.
- */
-function field_multifield_delete($multifield) {
-  // Any fields created from this multifield must also be deleted.
-  $fields = field_read_fields(array('type' => $multifield->machine_name), array('include_inactive' => TRUE));
-  foreach ($fields as $field) {
-    field_delete_field($field['field_name']);
-  }
-}
-
 function multifield_cache_clear() {
   field_info_cache_clear();
   drupal_static_reset('multifield_get_fields');
