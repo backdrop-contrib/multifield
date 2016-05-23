@@ -189,9 +189,6 @@ function multifield_cache_clear() {
   drupal_static_reset('multifield_get_subfields');
   ctools_include('export');
   ctools_export_load_object_reset('multifield');
-  if (module_exists('field_ui')) {
-    variable_set('menu_rebuild_needed', TRUE);
-  }
 }
 
 function multifield_field_machine_name_exists($name) {
