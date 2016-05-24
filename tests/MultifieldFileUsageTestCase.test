@@ -89,11 +89,18 @@ class MultifieldFileUsageTestCase extends DrupalWebTestCase {
     $this->assertFileUsage($text_file_2, 'file', 'node', $node->nid, 1);
     $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 0);
     $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 0);
+
+    node_delete($node->nid);
+
+    $this->assertFileUsage($text_file_1, 'file', 'multifield', $id1, 0);
+    $this->assertFileUsage($text_file_1, 'file', 'node', $node->nid, 0);
+    $this->assertFileUsage($text_file_2, 'file', 'multifield', $id1, 0);
+    $this->assertFileUsage($text_file_2, 'file', 'node', $node->nid, 0);
+    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 0);
+    $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 0);
   }
 
   public function assertFileUsage($file, $module, $type, $id, $count) {
-    // @todo Uncomment this line when https://www.drupal.org/node/2054243 is fixed.
-    if ($type == 'node') { return TRUE; }
     $usage = file_usage_list($file);
     $actual_count = isset($usage[$module][$type][$id]) ? $usage[$module][$type][$id] : 0;
     return $this->assertEqual($actual_count, $count, "File usage for fid {$file->fid} on {$module}:{$type}:{$id} is {$actual_count}, expected {$count}.");
