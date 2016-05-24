@@ -102,7 +102,7 @@ function multifield_entity_info() {
     'controller class' => 'MultifieldEntityController',
     'base table' => 'multifield',
     'fieldable' => TRUE,
-    // Mark this as a configuratoin entity type to prevent other modules from
+    // Mark this as a configuration entity type to prevent other modules from
     // assuming they can do stuff with this entity type.
     'configuration' => TRUE,
     'bundle keys' => array(
