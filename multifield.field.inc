@@ -110,7 +110,18 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
       $pseudo_entities[$pseudo_entity->id] = $pseudo_entity;
     }
   }
-  _multifield_field_attach_load('multifield', $pseudo_entities, $age);
+
+  // @todo Invoke hook_field_storage_pre_load()?
+
+  // Invoke field-type module's hook_field_load().
+  $null = NULL;
+  $options = array();
+  _field_invoke_multiple('load', 'multifield', $pseudo_entities, $age, $null, $options);
+
+  // Invoke hook_field_attach_load(): let other modules act on loading the
+  // entity.
+  // @todo Should this move to getting invoked from multifield_field_attach_load()?
+  module_invoke_all('field_attach_load', 'multifield', $pseudo_entities, $age, $options);
 
   // Store the loaded multifield entities in the entity cache.
   entity_get_controller('multifield')->cacheSet($pseudo_entities);
@@ -121,16 +132,6 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
     unset($pseudo_entity->parent_id);
     $item = _multifield_field_entity_to_item($pseudo_entity);
   }
-}
-
-function _multifield_field_attach_load($entity_type, $entities, $age = FIELD_LOAD_CURRENT, $options = array()) {
-  // Invoke field-type module's hook_field_load().
-  $null = NULL;
-  _field_invoke_multiple('load', $entity_type, $entities, $age, $null, $options);
-
-  // Invoke hook_field_attach_load(): let other modules act on loading the
-  // entity.
-  module_invoke_all('field_attach_load', $entity_type, $entities, $age, $options);
 }
 
 /**
@@ -175,7 +176,7 @@ function multifield_field_validate($entity_type, $entity, $field, $instance, $la
   $machine_name = multifield_extract_multifield_machine_name($field);
 
   foreach ($items as $delta => $item) {
-    $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
+    //$pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
     //_multifield_field_attach_form_validate('multifield', $pseudo_entity);
     //$items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
@@ -213,6 +214,9 @@ function _multifield_field_attach_form_validate($entity_type, $entity) {
 function multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
   $machine_name = multifield_extract_multifield_machine_name($field);
 
+  // Gather the original field values from the parent entity if it has them.
+  $original_items = !empty($entity->original->{$field['field_name']}[$langcode]) ? $entity->original->{$field['field_name']}[$langcode] : array();
+
   foreach ($items as $delta => $item) {
     // If an ID is not yes assigned, add one, unless this hook is invoked
     // from the default value widget on the field instance (empty $entity).
@@ -220,43 +224,66 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
       $item['id'] = multifield_get_next_id();
     }
 
-    // Run each sub-field through hook_field_presave().
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
-    // field_attach_presave() is safe to call directly, yay!
-    field_attach_presave('multifield', $pseudo_entity);
+
+    // Add the original item value to the pseudo-entity.
+    if (!empty($original_items[$delta])) {
+      $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
+    }
+
+    // Run each sub-field through hook_field_presave().
+    _multifield_field_invoke('presave', $machine_name, 'multifield', $pseudo_entity, $langcode);
+
+    unset($pseudo_entity->original);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
+
+  // Invoke hook_field_presave() with the sub-field data attached to a stub of
+  // the parent entity.
+  $stub_entity = _multifield_create_stub_entity_with_subfield_data($machine_name, $items, $original_items, $entity_type, $entity, $langcode);
+  _multifield_field_invoke('presave', $machine_name, $entity_type, $stub_entity, $langcode);
 
   // Serialize the multifield values into separate columns for saving into the
   // field table.
   array_walk($items, 'multifield_item_serialize', $machine_name);
 }
 
+/**
+ * Implements hook_field_attach_presave().
+ */
+function multifield_field_attach_presave($entity_type, $entity) {
+  // Run each pseudo-entity through hook_field_attach_presave().
+  _multifield_entity_multifields_pseudo_entities_module_invoke($entity_type, $entity, 'field_attach_presave');
+}
+
+/**
+ * Implements hook_field_attach_submit().
+ */
 function multifield_field_attach_submit($entity_type, $entity, $form, &$form_state) {
   list(, , $bundle) = entity_extract_ids($entity_type, $entity);
   $multifields = multifield_get_fields();
   $instances = array_intersect_key(field_info_instances($entity_type, $bundle), $multifields);
   foreach (array_keys($instances) as $field_name) {
+    $machine_name = $multifields[$field_name];
     if (!empty($entity->{$field_name})) {
-      foreach ($entity->{$field_name} as $langcode => $items) {
-        foreach ($items as $delta => $item) {
-          $pseudo_entity = _multifield_field_item_to_entity($multifields[$field_name], $item);
-          _multifield_field_attach_submit('multifield', $pseudo_entity, $form, $form_state);
-          $entity->{$field_name}[$langcode][$delta] = _multifield_field_entity_to_item($pseudo_entity);
+      foreach ($entity->{$field_name} as $langcode => &$items) {
+        foreach ($items as $delta => &$item) {
+          $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
+          // @todo Ensure that $pseudo_entity->original is available.
+
+          // Run each sub-field through hook_field_submit().
+          _multifield_field_invoke_default('submit', $machine_name, 'multifield', $pseudo_entity, $langcode, $form, $form_state);
+
+          // Run each pseudo-entity through hook_field_attach_submit().
+          foreach (module_implements('field_attach_submit') as $module) {
+            $function = $module . '_field_attach_submit';
+            $function('multifield', $pseudo_entity, $form, $form_state);
+          }
+
+          $item = _multifield_field_entity_to_item($pseudo_entity);
         }
       }
     }
-  }
-}
-
-function _multifield_field_attach_submit($entity_type, $entity, $form, &$form_state, $options = array()) {
-  _field_invoke_default('submit', $entity_type, $entity, $form, $form_state, $options);
-
-  // Let other modules act on submitting the entity.
-  // Avoid module_invoke_all() to let $form_state be taken by reference.
-  foreach (module_implements('field_attach_submit') as $module) {
-    $function = $module . '_field_attach_submit';
-    $function($entity_type, $entity, $form, $form_state);
   }
 }
 
@@ -287,20 +314,31 @@ function multifield_field_insert($entity_type, $entity, $field, $instance, $lang
   // Because field default values are loaded after hook_field_presave() is run,
   // manually call it again if a default value was used.
   if (!empty($instance['default_value']) && $items === $instance['default_value']) {
+    // @todo Revisit why this is necessary and if it could be simplified or removed.
     multifield_field_presave($entity_type, $entity, $field, $instance, $langcode, $items);
   }
-
-  //array_walk($items, 'multifield_item_unserialize', $machine_name);
 
   // Run each sub-field through hook_field_insert().
   foreach ($items as $delta => $item) {
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
-    _multifield_field_attach_insert($machine_name, $pseudo_entity, $langcode);
+
+    // Run each sub-field through hook_field_insert().
+    _multifield_field_invoke_default('insert', $machine_name, 'multifield', $pseudo_entity, $langcode);
+    _multifield_field_invoke('insert', $machine_name, 'multifield', $pseudo_entity, $langcode);
+
+    // Run each multifield pseudo-entity through hook_field_storage_pre_insert().
+    // @todo This invocation should probably be moved to a multifield_field_storage_pre_insert().
+    $skip_fields = array();
+    foreach (module_implements('field_storage_pre_insert') as $module) {
+      $function = $module . '_field_storage_pre_insert';
+      $function('multifield', $pseudo_entity, $skip_fields);
+    }
+
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 
-  // Invoke the field hooks with the sub-field data attached to a stub of the
-  // parent entity.
+  // Invoke hook_field_insert() with the sub-field data attached to a stub of
+  // the parent entity.
   $stub_entity = _multifield_create_stub_entity_with_subfield_data($machine_name, $items, array(), $entity_type, $entity, $langcode);
   _multifield_field_invoke('insert', $machine_name, $entity_type, $stub_entity, $langcode);
 
@@ -311,20 +349,12 @@ function multifield_field_insert($entity_type, $entity, $field, $instance, $lang
   multifield_update_maximum_id($items);
 }
 
-function _multifield_field_attach_insert($machine_name, $entity, $langcode) {
-  _multifield_field_invoke_default('insert', $machine_name, 'multifield', $entity, $langcode);
-  _multifield_field_invoke('insert', $machine_name, 'multifield', $entity, $langcode);
-
-  // Let any module insert field data before the storage engine, accumulating
-  // saved fields along the way.
-  //$skip_fields = array();
-  //foreach (module_implements('field_storage_pre_insert') as $module) {
-  //  $function = $module . '_field_storage_pre_insert';
-  //  $function($entity_type, $entity, $skip_fields);
-  //}
-
-  // Let other modules act on inserting the entity.
-  module_invoke_all('field_attach_insert', 'multifield', $entity);
+/**
+ * Implements hook_field_attach_insert().
+ */
+function multifield_field_attach_insert($entity_type, $entity) {
+  // Run each pseudo-entity through hook_field_attach_insert().
+  _multifield_entity_multifields_pseudo_entities_module_invoke($entity_type, $entity, 'field_attach_insert');
 }
 
 /**
@@ -332,24 +362,35 @@ function _multifield_field_attach_insert($machine_name, $entity, $langcode) {
  */
 function multifield_field_update($entity_type, $entity, $field, $instance, $langcode, &$items) {
   $machine_name = multifield_extract_multifield_machine_name($field);
-  //array_walk($items, 'multifield_item_unserialize', $machine_name);
 
   // Gather the original field values from the parent entity if it has them.
-  $original_items = isset($entity->original) ? field_get_items($entity_type, $entity->original, $field['field_name'], $langcode) : array();
+  $original_items = !empty($entity->original->{$field['field_name']}[$langcode]) ? $entity->original->{$field['field_name']}[$langcode] : array();
 
-  // Run each sub-field through hook_field_update().
   foreach ($items as $delta => $item) {
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
-    if (isset($original_items[$delta])) {
+
+    // Add the original item value to the pseudo-entity.
+    if (!empty($original_items[$delta])) {
       $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
     }
-    _multifield_field_attach_update($machine_name, $pseudo_entity, $langcode);
+
+    // Run each sub-field through hook_field_update().
+    _multifield_field_invoke('update', $machine_name, 'multifield', $pseudo_entity, $langcode);
+
+    // Run each multifield pseudo-entity through hook_field_storage_pre_update().
+    // @todo This invocation should probably be moved to a multifield_field_storage_pre_update().
+    $skip_fields = array();
+    foreach (module_implements('field_storage_pre_update') as $module) {
+      $function = $module . '_field_storage_pre_update';
+      $function('multifield', $pseudo_entity, $skip_fields);
+    }
+
     unset($pseudo_entity->original);
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 
-  // Invoke the field hooks with the subfield data attached to a stub of the
-  // parent entity.
+  // Invoke hook_field_update() with the sub-field data attached to a stub of
+  // the parent entity.
   $stub_entity = _multifield_create_stub_entity_with_subfield_data($machine_name, $items, $original_items, $entity_type, $entity, $langcode);
   _multifield_field_invoke('update', $machine_name, $entity_type, $stub_entity, $langcode);
 
@@ -360,19 +401,12 @@ function multifield_field_update($entity_type, $entity, $field, $instance, $lang
   multifield_update_maximum_id($items);
 }
 
-function _multifield_field_attach_update($machine_name, $entity, $langcode) {
-  _multifield_field_invoke('update', $machine_name, 'multifield', $entity, $langcode);
-
-  // Let any module update field data before the storage engine, accumulating
-  // saved fields along the way.
-  //$skip_fields = array();
-  //foreach (module_implements('field_storage_pre_update') as $module) {
-  //  $function = $module . '_field_storage_pre_update';
-  //  $function($entity_type, $entity, $skip_fields);
-  //}
-
-  // Let other modules act on updating the entity.
-  module_invoke_all('field_attach_update', 'multifield', $entity);
+/**
+ * Implements hook_field_attach_update().
+ */
+function multifield_field_attach_update($entity_type, $entity) {
+  // Run each pseudo-entity through hook_field_attach_delete().
+  _multifield_entity_multifields_pseudo_entities_module_invoke($entity_type, $entity, 'field_attach_update');
 }
 
 /**
@@ -381,15 +415,17 @@ function _multifield_field_attach_update($machine_name, $entity, $langcode) {
 function multifield_field_delete($entity_type, $entity, $field, $instance, $langcode, &$items) {
   $machine_name = multifield_extract_multifield_machine_name($field);
 
-  // Run each sub-field through hook_field_delete().
   foreach ($items as $delta => $item) {
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
-    _multifield_field_attach_delete($machine_name, $pseudo_entity, $langcode);
+
+    // Run each sub-field through hook_field_delete().
+    _multifield_field_invoke('delete', $machine_name, 'multifield', $pseudo_entity, $langcode);
+
     $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
   }
 
-  // Invoke the field hooks with the subfield data attached to a stub of the
-  // parent entity.
+  // Invoke hook_field_delete() with the sub-field data attached to a stub of
+  // the parent entity.
   $stub_entity = _multifield_create_stub_entity_with_subfield_data($machine_name, $items, array(), $entity_type, $entity, $langcode);
   _multifield_field_invoke('delete', $machine_name, $entity_type, $stub_entity, $langcode);
 
@@ -398,11 +434,12 @@ function multifield_field_delete($entity_type, $entity, $field, $instance, $lang
   }
 }
 
-function _multifield_field_attach_delete($machine_name, $entity, $langcode) {
-  _multifield_field_invoke('delete', $machine_name, 'multifield', $entity, $langcode);
-
-  // Let other modules act on deleting the entity.
-  module_invoke_all('field_attach_update', 'multifield', $entity);
+/**
+ * Implements hook_field_attach_update().
+ */
+function multifield_field_attach_delete($entity_type, $entity) {
+  // Run each pseudo-entity through hook_field_attach_delete().
+  _multifield_entity_multifields_pseudo_entities_module_invoke($entity_type, $entity, 'field_attach_delete');
 }
 
 /**
