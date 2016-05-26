@@ -138,7 +138,7 @@ function drush_multifield_convert_field_collection_table($source_field, $target_
   $query->fields('old');
   $query->orderBy('entity_type');
   $query->orderBy('revision_id');
-  $query->range($context['sandbox']['offset'], 100);
+  $query->range($context['sandbox']['count'], 100);
   $records = $query->execute()->fetchAllAssoc($source_field['field_name'] . '_value', PDO::FETCH_ASSOC);
   //var_export($records);
   $context['sandbox']['count'] += count($records);
