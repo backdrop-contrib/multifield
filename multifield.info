@@ -20,4 +20,5 @@ test_dependencies[] = devel
 test_dependencies[] = email
 test_dependencies[] = entityreference
 test_dependencies[] = entity_translation
+test_dependencies[] = field_collection
 test_dependencies[] = url
