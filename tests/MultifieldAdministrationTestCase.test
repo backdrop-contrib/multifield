@@ -13,7 +13,7 @@ class MultifieldAdministrationTestCase extends DrupalWebTestCase {
 
   public function setUp() {
     parent::setUp(array('multifield', 'field_ui', 'node', 'text'));
-    $account = $this->drupalCreateUser(array('administer content types', 'administer multifield'));
+    $account = $this->drupalCreateUser(array('administer content types', 'administer multifield', 'administer fields'));
     $this->drupalLogin($account);
   }
 
