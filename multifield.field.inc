@@ -220,7 +220,16 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
   foreach ($items as $delta => $item) {
     // If an ID is not yes assigned, add one, unless this hook is invoked
     // from the default value widget on the field instance (empty $entity).
+    // If this is a new or cloned entity, ensure that the internal ID values
+    // are reset.
     if (empty($item['id']) && !empty($entity)) {
+      $item['id'] = multifield_get_next_id();
+    }
+    // If an ID is assigned, but this is a new entity, then ensure that the ID
+    // is reassigned a new value.
+    // Cannot rely on $entity->is_new being set here because it usually gets
+    // added after calling field_attach_presave().
+    elseif (!empty($item['id']) && empty($entity->original)) {
       $item['id'] = multifield_get_next_id();
     }
 
@@ -847,7 +856,7 @@ function multifield_field_formatter_view($entity_type, $entity, $field, $instanc
 function _multifield_create_stub_entity_with_subfield_data($machine_name, array &$items, array $original_items, $parent_entity_type, $parent_entity, $langcode) {
   // Create a stub clone of the parent entity.
   $stub = entity_create_stub_entity($parent_entity_type, entity_extract_ids($parent_entity_type, $parent_entity));
-  if (isset($parent_entity->original)) {
+  if (!empty($parent_entity->original)) {
     $stub->original = entity_create_stub_entity($parent_entity_type, entity_extract_ids($parent_entity_type, $parent_entity->original));
   }
   foreach (multifield_type_get_subfields($machine_name) as $subfield_name) {

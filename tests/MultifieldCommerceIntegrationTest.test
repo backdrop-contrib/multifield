@@ -6,8 +6,6 @@
 
 class MultifieldCommerceIntegrationTest extends MultifieldTestBase {
 
-  protected $profile = 'testing';
-
   public static function getInfo() {
     return array(
       'name' => 'Drupal Commerce integration',
