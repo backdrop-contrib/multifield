@@ -569,4 +569,40 @@ class MultifieldUnitTestCase extends MultifieldTestBase {
     $this->assertEqual($node->field_multifield[LANGUAGE_NONE][0]['field_test'], $clone->field_multifield[LANGUAGE_NONE][0]['field_test']);
     $this->assertNotEqual($node->field_multifield[LANGUAGE_NONE][0]['id'], $clone->field_multifield[LANGUAGE_NONE][0]['id']);
   }
+
+  /**
+   * Tests multifield_field_update() with an empty original multifield value.
+   */
+  public function testEmptyOriginalItems() {
+    // Add the test node type.
+    $node_type = $this->drupalCreateContentType()->type;
+
+    field_create_field(array(
+      'field_name' => 'field_multifield',
+      'type' => 'multifield',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+    ));
+    field_create_field(array(
+      'field_name' => 'field_test',
+      'type' => 'test_field',
+    ));
+    field_create_instance(array(
+      'field_name' => 'field_test',
+      'entity_type' => 'multifield',
+      'bundle' => 'field_multifield',
+    ));
+    field_create_instance(array(
+      'field_name' => 'field_multifield',
+      'entity_type' => 'node',
+      'bundle' => $node_type,
+    ));
+
+    // Save a node with an empty multifield value.
+    $node = entity_create_stub_entity('node', array(NULL, NULL, $node_type));
+    node_save($node);
+
+    // Re-save the node with a non-empty value.
+    $node->field_multifield[LANGUAGE_NONE][0]['field_test'][LANGUAGE_NONE][0]['value'] = 1;
+    node_save($node);
+  }
 }

@@ -69,40 +69,47 @@ class MultifieldFileUsageTestCase extends DrupalWebTestCase {
     $node->type = $node_type->type;
     $node->language = LANGUAGE_NONE;
     $node->test_file_usage[LANGUAGE_NONE][0]['field_file'][LANGUAGE_NONE][0]['fid'] = $text_file_1->fid;
-    $node->test_file_usage[LANGUAGE_NONE][1]['field_image'][LANGUAGE_NONE][0]['fid'] = $image_file_1->fid;
+    $node->test_file_usage[LANGUAGE_NONE][1]['field_file'][LANGUAGE_NONE][0]['fid'] = $text_file_1->fid;
     node_save($node);
 
     $id1 = $node->test_file_usage[LANGUAGE_NONE][0]['id'];
     $id2 = $node->test_file_usage[LANGUAGE_NONE][1]['id'];
+
     $this->assertFileUsage($text_file_1, 'file', 'multifield', $id1, 1);
-    $this->assertFileUsage($text_file_1, 'file', 'node', $node->nid, 1);
-    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 1);
-    $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 1);
+    $this->assertFileUsage($text_file_1, 'file', 'multifield', $id2, 1);
+    $this->assertFileUsage($text_file_1, 'file', 'node', $node->nid, 2);
+    $this->assertNoFileUsage($text_file_2);
+    $this->assertNoFileUsage($image_file_1);
 
     $node->test_file_usage[LANGUAGE_NONE][0]['field_file'][LANGUAGE_NONE][0]['fid'] = $text_file_2->fid;
-    $node->test_file_usage[LANGUAGE_NONE][1]['field_image'][LANGUAGE_NONE][0] = array();
+    $node->test_file_usage[LANGUAGE_NONE][0]['field_image'][LANGUAGE_NONE][0]['fid'] = $image_file_1->fid;
+    $node->test_file_usage[LANGUAGE_NONE][1]['field_file'][LANGUAGE_NONE][0] = array();
+    $node->test_file_usage[LANGUAGE_NONE][1]['field_image'][LANGUAGE_NONE][0]['fid'] = $image_file_1->fid;
     node_save($node);
 
-    $this->assertFileUsage($text_file_1, 'file', 'multifield', $id1, 0);
-    $this->assertFileUsage($text_file_1, 'file', 'node', $node->nid, 0);
+    $this->assertNoFileUsage($text_file_1);
     $this->assertFileUsage($text_file_2, 'file', 'multifield', $id1, 1);
+    $this->assertFileUsage($text_file_2, 'file', 'multifield', $id2, 0);
     $this->assertFileUsage($text_file_2, 'file', 'node', $node->nid, 1);
-    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 0);
-    $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 0);
+    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id1, 1);
+    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 1);
+    $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 2);
 
     node_delete($node->nid);
 
-    $this->assertFileUsage($text_file_1, 'file', 'multifield', $id1, 0);
-    $this->assertFileUsage($text_file_1, 'file', 'node', $node->nid, 0);
-    $this->assertFileUsage($text_file_2, 'file', 'multifield', $id1, 0);
-    $this->assertFileUsage($text_file_2, 'file', 'node', $node->nid, 0);
-    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 0);
-    $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 0);
+    $this->assertNoFileUsage($text_file_1);
+    $this->assertNoFileUsage($text_file_2);
+    $this->assertNoFileUsage($image_file_1);
   }
 
   public function assertFileUsage($file, $module, $type, $id, $count) {
     $usage = file_usage_list($file);
     $actual_count = isset($usage[$module][$type][$id]) ? $usage[$module][$type][$id] : 0;
     return $this->assertEqual($actual_count, $count, "File usage for fid {$file->fid} on {$module}:{$type}:{$id} is {$actual_count}, expected {$count}.");
+  }
+
+  public function assertNoFileUsage($file) {
+    $usage = file_usage_list($file);
+    return $this->assertFalse($usage, "No file usage for fid {$file->fid}.");
   }
 }
