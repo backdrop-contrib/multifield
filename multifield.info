@@ -20,6 +20,7 @@ test_dependencies[] = clone
 test_dependencies[] = commerce
 test_dependencies[] = date
 test_dependencies[] = devel
+test_dependencies[] = diff
 test_dependencies[] = email
 test_dependencies[] = entityreference
 test_dependencies[] = entity_translation

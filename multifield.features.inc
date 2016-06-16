@@ -1,8 +1,8 @@
 <?php
 
 /**
-* Implements hook_field_default_field_bases_alter().
-*/
+ * Implements hook_field_default_field_bases_alter().
+ */
 function multifield_field_default_field_bases_alter(&$fields) {
   foreach ($fields as $field_name => $field) {
     if ($field['module'] == 'multifield') {
@@ -17,8 +17,8 @@ function multifield_field_default_field_bases_alter(&$fields) {
 }
 
 /**
-* Implements hook_features_pipe_COMPONENT_alter().
-*/
+ * Implements hook_features_pipe_COMPONENT_alter().
+ */
 function multifield_features_pipe_field_base_alter(&$pipe, $data, $export) {
   foreach ($data as $field_name) {
     // Export a multifield's subfields along with the field base.
