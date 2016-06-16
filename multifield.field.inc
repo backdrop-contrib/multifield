@@ -239,6 +239,10 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
     if (!empty($original_items[$delta])) {
       $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
     }
+    // Ensure the revision flag is set.
+    if (!empty($entity->revision)) {
+      $pseudo_entity->revision = TRUE;
+    }
 
     // Run each sub-field through hook_field_presave().
     _multifield_field_invoke('presave', $machine_name, 'multifield', $pseudo_entity, $langcode);
@@ -382,6 +386,10 @@ function multifield_field_update($entity_type, $entity, $field, $instance, $lang
     if (!empty($original_items[$delta])) {
       $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
     }
+    // Ensure the revision flag is set.
+    if (!empty($entity->revision)) {
+      $pseudo_entity->revision = TRUE;
+    }
 
     // Run each sub-field through hook_field_update().
     _multifield_field_invoke('update', $machine_name, 'multifield', $pseudo_entity, $langcode);
@@ -419,6 +427,35 @@ function multifield_field_attach_update($entity_type, $entity) {
 }
 
 /**
+ * Implements hook_field_delete_revision().
+ */
+function multifield_field_delete_revision($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  $machine_name = multifield_extract_multifield_machine_name($field);
+
+  foreach ($items as $delta => $item) {
+    $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
+
+    // Run each sub-field through hook_field_delete_revision().
+    _multifield_field_invoke('delete_revision', $machine_name, 'multifield', $pseudo_entity, $langcode);
+
+    //$items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
+  }
+
+  // Invoke hook_field_delete() with the sub-field data attached to a stub of
+  // the parent entity.
+  $stub_entity = _multifield_create_stub_entity_with_subfield_data($machine_name, $items, array(), $entity_type, $entity, $langcode);
+  _multifield_field_invoke('delete_revision', $machine_name, $entity_type, $stub_entity, $langcode);
+}
+
+/**
+ * Implements hook_field_attach_delete_revision().
+ */
+function multifield_field_attach_delete_revision($entity_type, $entity) {
+  // Run each pseudo-entity through hook_field_attach_delete_revision().
+  _multifield_entity_multifields_pseudo_entities_module_invoke($entity_type, $entity, 'field_attach_delete_revision');
+}
+
+/**
  * Implements hook_field_delete().
  */
 function multifield_field_delete($entity_type, $entity, $field, $instance, $langcode, &$items) {
@@ -430,7 +467,30 @@ function multifield_field_delete($entity_type, $entity, $field, $instance, $lang
     // Run each sub-field through hook_field_delete().
     _multifield_field_invoke('delete', $machine_name, 'multifield', $pseudo_entity, $langcode);
 
-    $items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
+    //$items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
+  }
+
+  // Fetch all the past revisions of this entity and run all the previous
+  // multifield values through hook_field_delete_revision().
+  $info = entity_get_info($entity_type);
+  if (!empty($info['revision table']) && !empty($info['entity keys']['revision'])) {
+    $id_key = $info['entity keys']['id'];
+    $entity_id = $entity->{$id_key};
+    $revision_key = $info['entity keys']['revision'];
+    $query = db_select($info['revision table'], 'revision');
+    $query->addField('revision', $revision_key);
+    $query->condition('revision.' . $id_key, $entity_id);
+    $revision_ids = $query->execute()->fetchCol();
+    foreach ($revision_ids as $revision_id) {
+      if ($revisions = entity_load($entity_type, array($entity_id), array($revision_key => $revision_id))) {
+        $revision = reset($revisions);
+        if (!empty($revision->{$field['field_name']})) {
+          foreach ($revision->{$field['field_name']} as $revision_langcode => $revision_items) {
+            multifield_field_delete_revision($entity_type, $revision, $field, $instance, $langcode, $revision_items);
+          }
+        }
+      }
+    }
   }
 
   // Invoke hook_field_delete() with the sub-field data attached to a stub of
@@ -876,8 +936,13 @@ function _multifield_create_stub_entity_with_subfield_data($machine_name, array 
     if (isset($stub->original)) {
       $stub->original->{$subfield_name}[$langcode] = array_filter($stub->original->{$subfield_name}[$langcode]);
     }
-
   }
+
+  // Ensure the revision flag is set.
+  if (!empty($parent_entity->revision)) {
+    $stub->revision = TRUE;
+  }
+
   return $stub;
 }
 

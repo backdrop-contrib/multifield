@@ -71,6 +71,7 @@ class MultifieldFileUsageTestCase extends DrupalWebTestCase {
     $node->test_file_usage[LANGUAGE_NONE][0]['field_file'][LANGUAGE_NONE][0]['fid'] = $text_file_1->fid;
     $node->test_file_usage[LANGUAGE_NONE][1]['field_file'][LANGUAGE_NONE][0]['fid'] = $text_file_1->fid;
     node_save($node);
+    $first_revision_id = $node->vid;
 
     $id1 = $node->test_file_usage[LANGUAGE_NONE][0]['id'];
     $id2 = $node->test_file_usage[LANGUAGE_NONE][1]['id'];
@@ -95,6 +96,37 @@ class MultifieldFileUsageTestCase extends DrupalWebTestCase {
     $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 1);
     $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 2);
 
+    // Test saving a revision of the node to ensure previous usages are
+    // preserved.
+    $node->revision = TRUE;
+    $node->test_file_usage[LANGUAGE_NONE][0]['field_file'][LANGUAGE_NONE][0]['fid'] = $text_file_2->fid;
+    $node->test_file_usage[LANGUAGE_NONE][0]['field_image'][LANGUAGE_NONE][0]['fid'] = $image_file_1->fid;
+    $node->test_file_usage[LANGUAGE_NONE][1] = array();
+    node_save($node);
+
+    $this->assertNoFileUsage($text_file_1);
+    $this->assertFileUsage($text_file_2, 'file', 'multifield', $id1, 2);
+    $this->assertFileUsage($text_file_2, 'file', 'multifield', $id2, 0);
+    $this->assertFileUsage($text_file_2, 'file', 'node', $node->nid, 2);
+    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id1, 2);
+    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 1);
+    $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 3);
+
+    // Set the multifield to empty and delete the old revision.
+    $node->revision = TRUE;
+    $node->test_file_usage = array();
+    node_save($node);
+    node_revision_delete($first_revision_id);
+
+    $this->assertNoFileUsage($text_file_1);
+    $this->assertFileUsage($text_file_2, 'file', 'multifield', $id1, 1);
+    $this->assertFileUsage($text_file_2, 'file', 'multifield', $id2, 0);
+    $this->assertFileUsage($text_file_2, 'file', 'node', $node->nid, 1);
+    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id1, 1);
+    $this->assertFileUsage($image_file_1, 'file', 'multifield', $id2, 0);
+    $this->assertFileUsage($image_file_1, 'file', 'node', $node->nid, 1);
+
+    // Delete the node and test that all usages have been removed.
     node_delete($node->nid);
 
     $this->assertNoFileUsage($text_file_1);

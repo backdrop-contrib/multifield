@@ -604,5 +604,48 @@ class MultifieldUnitTestCase extends MultifieldTestBase {
     // Re-save the node with a non-empty value.
     $node->field_multifield[LANGUAGE_NONE][0]['field_test'][LANGUAGE_NONE][0]['value'] = 1;
     node_save($node);
+
+    // This previously caused a failure due to field_get_items() in
+    // multifeld_field_update() returning FALSE instead of an array(), so just
+    // testing to make sure this didn't fail.
+  }
+
+  public function testRevisions() {
+    // Add the test node type.
+    $node_type = $this->drupalCreateContentType()->type;
+
+    field_create_field(array(
+      'field_name' => 'field_multifield',
+      'type' => 'multifield',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+    ));
+    field_create_field(array(
+      'field_name' => 'field_test',
+      'type' => 'test_field',
+    ));
+    field_create_instance(array(
+      'field_name' => 'field_test',
+      'entity_type' => 'multifield',
+      'bundle' => 'field_multifield',
+    ));
+    field_create_instance(array(
+      'field_name' => 'field_multifield',
+      'entity_type' => 'node',
+      'bundle' => $node_type,
+    ));
+
+    // Save a node with an empty multifield value.
+    $node = entity_create_stub_entity('node', array(NULL, NULL, $node_type));
+    $node->field_multifield[LANGUAGE_NONE][0]['field_test'][LANGUAGE_NONE][0]['value'] = 1;
+    node_save($node);
+
+    // Re-save the node with a new revision.
+    $revision = clone $node;
+    $revision->revision = TRUE;
+    $revision->field_multifield[LANGUAGE_NONE][0]['field_test'][LANGUAGE_NONE][0]['value'] = 2;
+    node_save($revision);
+
+    // The multifield ID should not have changed.
+    $this->assertIdentical($node->field_multifield[LANGUAGE_NONE][0]['id'], $revision->field_multifield[LANGUAGE_NONE][0]['id']);
   }
 }
