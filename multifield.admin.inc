@@ -157,7 +157,7 @@ function multifield_edit_form_submit($form, &$form_state) {
       $form_state['redirect'] = 'admin/structure/multifield/manage/' . $multifield->machine_name . '/fields';
     }
     else {
-      drupal_set_message(t('The Field UI module must be enabled to add fields to the multifield.'));
+      backdrop_set_message(t('The Field UI module must be enabled to add fields to the multifield.'));
       $form_state['redirect'] = 'admin/structure/multifield';
     }
   }

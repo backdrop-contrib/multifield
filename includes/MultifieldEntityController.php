@@ -67,7 +67,7 @@ class MultifieldEntityController extends DrupalDefaultEntityController {
       }
     }
 
-    return array_intersect_key($this->entityCache, drupal_map_assoc($ids, $ids));
+    return array_intersect_key($this->entityCache, backdrop_map_assoc($ids, $ids));
   }
 
   public function cacheSet($entities) {

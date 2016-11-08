@@ -601,7 +601,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     '#type' => 'actions',
     //'#attached' => array(
     //  'css' => array(
-    //    drupal_get_path('module', 'multifield') . '/multifield.field.css' => array(),
+    //    backdrop_get_path('module', 'multifield') . '/multifield.field.css' => array(),
     //  ),
     //),
     '#pre_render' => array('_multifield_show_only_if_visible_children'),
@@ -687,7 +687,7 @@ function multifield_field_widget_validate($element, &$form_state) {
 function multifield_field_widget_remove_item_ajax() {
   require_once DRUPAL_ROOT . '/includes/form.inc';
 
-  // drupal_html_id() very helpfully ensures that all html IDS are unique
+  // backdrop_html_id() very helpfully ensures that all html IDS are unique
   // on a page. Unfortunately what it doesn't realize is that the IDs
   // we are generating are going to replace IDs that already exist, so
   // this actually works against us.
@@ -696,17 +696,17 @@ function multifield_field_widget_remove_item_ajax() {
   }
 
   list($form, $form_state) = ajax_get_form();
-  drupal_process_form($form['#form_id'], $form, $form_state);
+  backdrop_process_form($form['#form_id'], $form, $form_state);
 
   // Get the information on what we're removing.
   $button = $form_state['triggering_element'];
   // Go two levels up in the form, to the whole widget.
-  $element = drupal_array_get_nested_value($form, array_slice($button['#array_parents'], 0, -4));
+  $element = backdrop_array_get_nested_value($form, array_slice($button['#array_parents'], 0, -4));
   // Now send back the proper AJAX command to replace it.
   $return = array(
     '#type' => 'ajax',
     '#commands' => array(
-      ajax_command_replace('#' . $element['#id'], drupal_render($element))
+      ajax_command_replace('#' . $element['#id'], backdrop_render($element))
     ),
   );
 
@@ -740,7 +740,7 @@ function multifield_field_widget_remove_item_submit($form, &$form_state) {
   $address = array_slice($button['#array_parents'], 0, -3);
 
   // Go one level up in the form, to the widgets container.
-  $parent_element = drupal_array_get_nested_value($form, $address);
+  $parent_element = backdrop_array_get_nested_value($form, $address);
   $field_name = $parent_element['#field_name'];
   $langcode = $parent_element['#language'];
   $parents = $parent_element['#field_parents'];
@@ -753,16 +753,16 @@ function multifield_field_widget_remove_item_submit($form, &$form_state) {
     $old_element_address = array_merge($address, array($i + 1));
     $new_element_address = array_merge($address, array($i));
 
-    $moving_element = drupal_array_get_nested_value($form, $old_element_address);
-    $moving_element_value = drupal_array_get_nested_value($form_state['values'], $old_element_address);
-    $moving_element_input = drupal_array_get_nested_value($form_state['input'], $old_element_address);
+    $moving_element = backdrop_array_get_nested_value($form, $old_element_address);
+    $moving_element_value = backdrop_array_get_nested_value($form_state['values'], $old_element_address);
+    $moving_element_input = backdrop_array_get_nested_value($form_state['input'], $old_element_address);
 
     // Tell the element where it's being moved to.
     $moving_element['#parents'] = $new_element_address;
 
     // Move the element around.
     form_set_value($moving_element, $moving_element_value, $form_state);
-    drupal_array_set_nested_value($form_state['input'], $moving_element['#parents'], $moving_element_input);
+    backdrop_array_set_nested_value($form_state['input'], $moving_element['#parents'], $moving_element_input);
   }
 
   // Then remove the last item. But we must not go negative.
@@ -779,7 +779,7 @@ function multifield_field_widget_remove_item_submit($form, &$form_state) {
   // if I have items weight weights 3 and 4, and I change 4 to 3 but leave
   // the 3, the order of the two 3s now is undefined and may not match what
   // the user had selected.
-  $input = drupal_array_get_nested_value($form_state['input'], $address);
+  $input = backdrop_array_get_nested_value($form_state['input'], $address);
   // Sort by weight
   uasort($input, '_field_sort_items_helper');
 
@@ -791,7 +791,7 @@ function multifield_field_widget_remove_item_submit($form, &$form_state) {
     }
   }
 
-  drupal_array_set_nested_value($form_state['input'], $address, $input);
+  backdrop_array_set_nested_value($form_state['input'], $address, $input);
   field_form_set_state($parents, $field_name, $langcode, $form_state, $field_state);
 
   $form_state['rebuild'] = TRUE;

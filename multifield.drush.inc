@@ -167,7 +167,7 @@ function drush_multifield_convert_field_collection_table($source_field, $target_
   foreach ($records as &$record) {
     $record[$target_field['field_name'] . '_id'] = multifield_get_next_id();
     $record['deleted'] = 0;
-    drupal_write_record($target_table, $record);
+    backdrop_write_record($target_table, $record);
     entity_get_controller($record['entity_type'])->resetCache(array($record['entity_id']));
   }
   multifield_update_maximum_id($records);
