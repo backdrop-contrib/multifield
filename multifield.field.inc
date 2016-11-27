@@ -685,7 +685,7 @@ function multifield_field_widget_validate($element, &$form_state) {
  * output by doing a replace command on the id of the entire form element.
  */
 function multifield_field_widget_remove_item_ajax() {
-  require_once DRUPAL_ROOT . '/includes/form.inc';
+  require_once DRUPAL_ROOT . '/core/includes/form.inc';
 
   // backdrop_html_id() very helpfully ensures that all html IDS are unique
   // on a page. Unfortunately what it doesn't realize is that the IDs
@@ -959,9 +959,7 @@ function _multifield_field_invoke($op, $machine_name, $entity_type, $entity, $la
   $instances = _field_invoke_get_instances('multifield', $machine_name, $options);
 
   foreach ($instances as $instance) {
-    // field_info_field() is not available for deleted fields, so use
-    // field_info_field_by_id().
-    $field = field_info_field_by_id($instance['field_id']);
+    $field = field_info_field($instance['field_name']);
     $field_name = $field['field_name'];
     $function = $options['default'] ? 'field_default_' . $op : $field['module'] . '_field_' . $op;
     if (function_exists($function)) {
