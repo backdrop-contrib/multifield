@@ -64,12 +64,23 @@ function multifield_field_schema($field) {
   // we want to ensure we're using the most current data, the function isn't
   // used.
   $machine_name = multifield_extract_multifield_machine_name($field);
-  $field_names = db_query("SELECT fci.field_name FROM {field_config_instance} fci INNER JOIN {field_config} fc ON fc.id = fci.field_id WHERE fc.active = 1 AND fc.storage_active = 1 AND fc.deleted = 0 AND fci.deleted = 0 AND fci.entity_type = 'multifield' AND fci.bundle = :bundle", array(':bundle' => $machine_name))->fetchCol();
+  $field_names = array();
+  $config_names = config_get_names_with_prefix('field.instance.');
+  foreach ($config_names as $config_name) {
+    $field = config_get($config_name);
+    if ($field['bundle'] == $machine_name && $field['entity_type'] == 'multifield') {
+      $field_names[] = $field['field_name'];
+    }
+  }
+  
   if (empty($field_names)) {
     return $schema;
   }
 
-  $subfields = field_read_fields(array('field_name' => $field_names));
+  foreach ($field_names as $name) {
+    $subfields[$name] = reset(field_read_fields(array('field_name' => $name)));
+  }
+
   foreach ($subfields as $field_name => $subfield) {
     // Translate the subfield columns to the multifield.
     foreach ($subfield['columns'] as $key => $column) {

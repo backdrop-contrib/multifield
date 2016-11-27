@@ -233,8 +233,15 @@ function multifield_get_fields() {
       $fields = $cached->data;
     }
     else {
-      // This query is based from FieldInfo::getFieldMap().
-      $fields = db_query("SELECT fc.field_name, fc.type FROM {field_config} fc WHERE fc.active = 1 AND fc.storage_active = 1 AND fc.deleted = 0 AND fc.module = 'multifield'")->fetchAllKeyed();
+      $fields = array();
+      $config_names = config_get_names_with_prefix('field.field.');
+      foreach ($config_names as $config_name) {
+        $field = config_get($config_name);
+        if ($field['module'] == 'multifield') {
+          $fields[$field['field_name']] = $field['type'];
+        }
+      }
+
       foreach ($fields as $field_name => $field_type) {
         if ($field_type == 'multifield') {
           $fields[$field_name] = $field_name;
@@ -289,7 +296,18 @@ function multifield_get_subfields() {
     }
     else {
       $subfields = array();
-      $results = db_query("SELECT fci.bundle, fci.field_name FROM {field_config_instance} fci INNER JOIN {field_config} fc ON fc.id = fci.field_id WHERE fc.active = 1 AND fc.storage_active = 1 AND fc.deleted = 0 AND fci.deleted = 0 AND fci.entity_type = 'multifield'")->fetchAll();
+      $results = array();
+      $config_names = config_get_names_with_prefix('field.instance.');
+      foreach ($config_names as $config_name) {
+        $field = config_get($config_name);
+        if ($field['entity_type'] == 'multifield') {
+          $result = new stdClass();
+          $result->bundle = $field['bundle'];
+          $result->field_name = $field['field_name'];
+          $results[] = $result;
+        }
+      }
+
       foreach ($results as $result) {
         if (!isset($subfields[$result->bundle])) {
           $subfields[$result->bundle] = array();
