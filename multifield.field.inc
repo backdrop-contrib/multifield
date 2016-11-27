@@ -685,7 +685,7 @@ function multifield_field_widget_validate($element, &$form_state) {
  * output by doing a replace command on the id of the entire form element.
  */
 function multifield_field_widget_remove_item_ajax() {
-  require_once DRUPAL_ROOT . '/core/includes/form.inc';
+  require_once BACKDROP_ROOT . '/core/includes/form.inc';
 
   // backdrop_html_id() very helpfully ensures that all html IDS are unique
   // on a page. Unfortunately what it doesn't realize is that the IDs
