@@ -78,7 +78,8 @@ function multifield_field_schema($field) {
   }
 
   foreach ($field_names as $name) {
-    $subfields[$name] = reset(field_read_fields(array('field_name' => $name)));
+    $subfield_data = field_read_fields(array('field_name' => $name));
+    $subfields[$name] = reset($subfield_data);  
   }
 
   foreach ($subfields as $field_name => $subfield) {
