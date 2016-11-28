@@ -131,25 +131,8 @@ function multifield_field_schema($field) {
 }
 
 /**
- * Remove the {multifield}.fields column.
+ * Implements hook_update_last_removed().
  */
-function multifield_update_7100() {
-  if (db_field_exists('multifield', 'fields')) {
-    db_drop_field('multifield', 'fields');
-  }
-}
-
-/**
- * Increase the maximum length of {multifield}.machine_name.
- */
-function multifield_update_7101() {
-  db_drop_unique_key('multifield', 'machine_name');
-  $schema = array(
-    'type' => 'varchar',
-    'length' => 128,
-    'default' => '',
-    'not null' => TRUE,
-  );
-  db_change_field('multifield', 'machine_name', 'machine_name', $schema);
-  db_add_unique_key('multifield', 'machine_name', array('machine_name'));
+function multifield_update_last_removed() {
+  return 7101;
 }
