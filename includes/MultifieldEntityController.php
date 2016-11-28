@@ -1,6 +1,6 @@
 <?php
 
-class MultifieldEntityController extends DrupalDefaultEntityController {
+class MultifieldEntityController extends DefaultEntityController {
   public function load($ids = array(), $conditions = array()) {
     if (!empty($conditions)) {
       throw new InvalidArgumentException('MultifieldEntityController does not support entity_load() using conditions.');
