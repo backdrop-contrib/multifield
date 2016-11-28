@@ -1,10 +1,8 @@
 #Multifield
 
-_IN PROCESS, CURRENTLY INCOMPLETE_
-
 This project seeks to provide a true compound field solution for Backdrop.
 
-![Multifield](https://github.com/backdrop-contrib/multifield/blob/1.x-1.x/images/screenshot.png "Multifield")
+![Multifield](https://github.com/backdrop-contrib/multifield/blob/1.x-1.x/images/multifield-screenshot.png "Multifield")
 
 ##Limitations
 
@@ -12,7 +10,6 @@ This project seeks to provide a true compound field solution for Backdrop.
  - You cannot have a multifield inside another multifield.
  - I've tried to test this with all the core field types, but more advanced fields may cause issues. I haven't run into any yet, but just be aware and test what you want to use.
  - I will be the first to admit, this solution is doing all kinds of unholy things to Backdrop's field and entity APIs, so there may be unexpected dragons laying around that I haven't discovered.
-
 
 ##Installation
 
