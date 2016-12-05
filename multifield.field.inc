@@ -597,7 +597,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     '#value' => !empty($item['id']) ? $item['id'] : NULL,
   );
 
-  $element['actions'] = array(
+  $element['container'] = array(
     '#type' => 'actions',
     //'#attached' => array(
     //  'css' => array(
@@ -606,7 +606,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     //),
     '#pre_render' => array('_multifield_show_only_if_visible_children'),
   );
-  $element['actions']['remove_button'] = array(
+  $element['container']['remove_button'] = array(
     '#type' => 'submit',
     '#value' => t('Remove'),
     '#name' => implode('_', $element['#parents']) . '_remove_button',
