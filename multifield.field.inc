@@ -605,6 +605,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
     //  ),
     //),
     '#pre_render' => array('_multifield_show_only_if_visible_children'),
+    '#weight' => 99,
   );
   $element['actions']['remove_button'] = array(
     '#type' => 'submit',
@@ -621,7 +622,6 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
       'class' => array('remove-button', 'delta-' . $delta),
     ),
     '#access' => $field['cardinality'] == FIELD_CARDINALITY_UNLIMITED && !$is_default_value_widget,
-    '#weight' => 99,
   );
 
   _multifield_field_attach_form('multifield', $pseudo_entity, $element, $form_state, LANGUAGE_NONE);
