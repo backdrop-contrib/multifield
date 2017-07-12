@@ -598,13 +598,14 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
   );
 
   $element['actions'] = array(
-    '#type' => 'actions',
+    '#type' => 'container',
     //'#attached' => array(
     //  'css' => array(
     //    backdrop_get_path('module', 'multifield') . '/multifield.field.css' => array(),
     //  ),
     //),
     '#pre_render' => array('_multifield_show_only_if_visible_children'),
+    '#weight' => 99,
   );
   $element['actions']['remove_button'] = array(
     '#type' => 'submit',
