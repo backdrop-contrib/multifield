@@ -65,7 +65,7 @@ class MultifieldDevelGenerateTestCase extends DrupalWebTestCase {
 
   public function testDevelGenerate() {
     // Copied from devel_generate_content_add_node()
-    $node = new stdClass();
+    $node = new Node();
     $node->nid = NULL;
     $node->type = $this->nodeType->type;
     node_object_prepare($node);

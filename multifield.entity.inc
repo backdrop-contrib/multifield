@@ -1,4 +1,115 @@
 <?php
+/**
+ * @file
+ * Entity classes and controllers for Multifield module.
+ */
+
+/**
+ * Defines the taxonomy term entity.
+ */
+class Multifield extends Entity {
+
+  /**
+   * The Multifield ID. Only used for internal lookups.
+   *
+   * @var integer
+   */
+  public $mfid;
+
+  /**
+   * The machine name of the field added to the parent entity.
+   *
+   * @var string
+   */
+  public $machine_name;
+
+  /**
+   * The label for the multifield.
+   *
+   * @var integer
+   */
+  public $label;
+
+  /**
+   * (optional) Description of the term.
+   *
+   * @var string
+   */
+  public $description;
+
+  /**
+   * Whether the entity is safe to be modified.
+   *
+   * @var boolean
+   */
+  public $locked;
+
+  /**
+   * The machine name of the multifield entity.
+   *
+   * @var string
+   */
+  public $bundle;
+
+/***/
+
+  /**
+   * (optional) The ID of the parent entity.
+   *
+   * It might be useful to include the ID of the parent entity.
+   *
+   * @var array
+   */
+  //public $parent_id;
+
+  /**
+   * (optional) The entity type of the parent entity.
+   *
+   * It might be useful to include the type of the parent entity.
+   *
+   * @var array
+   */
+  //public $parent_type;
+
+
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {
+    // This should maybe be the parent entity's ID?
+    return $this->mfid;
+  }
+
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {
+    return $this->machine_name;
+  }
+
+  /**
+   * Implements EntityInterface::bundle().
+   */
+  public function bundle() {
+    return $this->bundle;
+  }
+
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {
+    return 'multifield';
+  }
+
+  /**
+   * Implements EntityInterface::uri()
+   */
+  public function uri() {
+    return array(
+      // This may not be allowed. Trying anyway.
+    );
+  }
+}
 
 class MultifieldEntityController extends DefaultEntityController {
   public function load($ids = array(), $conditions = array()) {
