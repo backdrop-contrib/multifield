@@ -424,7 +424,7 @@ class MultifieldViewsHandler extends views_handler_field {
       '#options' => $formatters,
       '#default_value' => $this->options['type'],
       '#ajax' => array(
-        'path' => views_ui_build_form_url($form_state),
+        'path' => views_ui_build_form_path($form_state),
       ),
       '#submit' => array('views_ui_config_item_form_submit_temporary'),
       '#executes_submit_callback' => TRUE,
@@ -450,8 +450,39 @@ class MultifieldViewsHandler extends views_handler_field {
     $settings = $this->options['settings'] + field_info_formatter_settings($format);
 
     // Provide an instance array for hook_field_formatter_settings_form().
-    ctools_include('fields');
-    $this->instance = ctools_fields_fake_field_instance($this->definition['subfield_name'], '_custom', $formatter, $settings);
+    $field = field_read_field($this->definition['subfield_name']);
+  
+    $field_type = field_info_field_types($field ['type']);
+  
+    return array(
+      // Build a fake entity type and bundle.
+      'field_name' => $this->definition['subfield_name'],
+      'entity_type' => 'ctools',
+      'bundle' => 'ctools',
+  
+      // Use the default field settings for settings and widget.
+      'settings' => field_info_instance_settings($field ['type']),
+      'widget' => array(
+        'type' => $field_type ['default_widget'],
+        'settings' => array(),
+      ),
+  
+      // Build a dummy display mode.
+      'display' => array(
+        '_custom' => array(
+          'type' => $formatter,
+          'settings' => $formatter_settings,
+        ),
+      ),
+  
+      // Set the other fields to their default values.
+      // @see _field_write_instance().
+      'required' => FALSE,
+      'label' => $this->definition['subfield_name'],
+      'description' => '',
+      'deleted' => 0,
+    );
+
 
     // Store the settings in a '_custom' view mode.
     $this->instance['display']['_custom'] = array(
