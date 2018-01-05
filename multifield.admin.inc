@@ -17,7 +17,9 @@ function multifield_list_page() {
   $rows = array();
   foreach (multifield_load_all() as $machine_name => $multifield) {
     $row = array('data' => array());
-    $row['data'][] = check_plain($multifield->label);
+    $fields = _multifield_get_usage_summary($machine_name, TRUE);
+    $label = key($fields);
+    $row['data'][] = $label;
     $row['data'][] = check_plain($machine_name);
 
     $subfields = field_info_instances('multifield', $machine_name);
@@ -197,10 +199,11 @@ function _multifield_get_usage_summary($machine_name, $links = FALSE) {
     $field = field_info_field($field_name);
     foreach ($field['bundles'] as $entity_type => $bundles) {
       foreach ($bundles as $bundle) {
+        $label = config_get("field.instance.$entity_type.$bundle.$field_name",'label');
         $text = "$field_name ($entity_type:$bundle)";
         if ($links && module_exists('field_ui')) {
           $path = _field_ui_bundle_admin_path($entity_type, $bundle) . '/fields/' . $field_name;
-          $fields[] = l($text, $path);
+          $fields[$label] = l($text, $path);
         }
         else {
           $fields[] = check_plain($text);
