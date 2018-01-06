@@ -17,9 +17,13 @@ function multifield_list_page() {
   $rows = array();
   foreach (multifield_load_all() as $machine_name => $multifield) {
     $row = array('data' => array());
+
+    // Get the multifield details needed for the 'Label' and 'Used as field in' columns.
     $fields = _multifield_get_usage_summary($machine_name, TRUE);
-    $label = key($fields);
-    $row['data'][] = $label;
+    $field_used_as = array();
+    $field_used_as[] = $fields['used_as'];
+
+    $row['data'][] = $fields['label'];
     $row['data'][] = check_plain($machine_name);
 
     $subfields = field_info_instances('multifield', $machine_name);
@@ -36,9 +40,7 @@ function multifield_list_page() {
         break;
     }
 
-    $fields = _multifield_get_usage_summary($machine_name, TRUE);
-    $row['data'][] = !empty($fields) ? theme('item_list', array('items' => $fields)) : t('None');
-
+    $row['data'][] = !empty($fields) ? theme('item_list', array('items' => $field_used_as)) : t('None');
     $base = 'admin/structure/multifield/manage/' . $machine_name;
     $operations = array();
     if (multifield_edit_access($multifield)) {
@@ -199,11 +201,13 @@ function _multifield_get_usage_summary($machine_name, $links = FALSE) {
     $field = field_info_field($field_name);
     foreach ($field['bundles'] as $entity_type => $bundles) {
       foreach ($bundles as $bundle) {
+        // Get the label for this instance of the multifield.
         $label = config_get("field.instance.$entity_type.$bundle.$field_name",'label');
+        // Construct the link for admin of the multifield settings.
         $text = "$field_name ($entity_type:$bundle)";
         if ($links && module_exists('field_ui')) {
           $path = _field_ui_bundle_admin_path($entity_type, $bundle) . '/fields/' . $field_name;
-          $fields[$label] = l($text, $path);
+          $fields = array('used_as' => l($text, $path),'label' => $label);
         }
         else {
           $fields[] = check_plain($text);
