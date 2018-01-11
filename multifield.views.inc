@@ -61,7 +61,7 @@ function multifield_field_views_data($field) {
                 $table[$field_name.'_'.$subfield_name.'_value']['group'] = 'Multifield';
                 $table[$field_name.'_'.$subfield_name.'_value']['title short'] = $table[$field_name]['title'].':'.$table[$field_name.'_'.$subfield_name.'_value'][$handler]['field_name'];
                 // Overwrite field_name.
-								$table[$f_data['field']['additional fields'][$index]][$handler]['field_name'] = $subfield_data['field_data_' . $subfield_name][$source_field]['title short'];
+                $table[$f_data['field']['additional fields'][$index]][$handler]['field_name'] = $subfield_data['field_data_' . $subfield_name][$source_field]['title short'];
                 // Overwrite handler.
                 $table[$f_data['field']['additional fields'][$index]][$handler]['handler'] = $subfield_data['field_data_' . $subfield_name][$source_field][$handler]['handler'];
                 // Add additional options without overwriting table etc.
