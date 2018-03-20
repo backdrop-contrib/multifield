@@ -235,7 +235,7 @@ class MultifieldUnitTestCase extends MultifieldTestBase {
     $schema = module_invoke('multifield', 'field_schema', $schema_field);
     $this->assertIdentical($schema, array());
 
-    $multifield = new stdClass();
+    $multifield = new Multifield();
     $multifield->machine_name = 'test';
     $multifield->label = 'Test label';
     $multifield->description = 'Test description';
@@ -483,7 +483,7 @@ class MultifieldUnitTestCase extends MultifieldTestBase {
     );
     field_create_instance($multifield_instance);
 
-    $node = new stdClass();
+    $node = new Node();
     $node->type = $node_type->type;
     $node->uid = 0;
     $node->status = 1;

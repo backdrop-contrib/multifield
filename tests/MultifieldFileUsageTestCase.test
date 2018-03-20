@@ -65,7 +65,7 @@ class MultifieldFileUsageTestCase extends DrupalWebTestCase {
     );
     field_create_instance($multifield_field_instance);
 
-    $node = new stdClass();
+    $node = new Node();
     $node->type = $node_type->type;
     $node->language = LANGUAGE_NONE;
     $node->test_file_usage[LANGUAGE_NONE][0]['field_file'][LANGUAGE_NONE][0]['fid'] = $text_file_1->fid;
