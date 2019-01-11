@@ -265,22 +265,29 @@ function _multifield_get_multifeld_fields($entity) {
  * Implements hook_entity_info().
  */
 function multifield_entity_info() {
-  $info['multifield'] = array(
-    'label' => t('Multifield'),
-    'entity class' => 'Multifield',
-    'controller class' => 'MultifieldEntityController',
-    'base table' => NULL, // Needed to prevent PHP notices.
-    'revision table' => NULL, // Needed to prevent PHP notices.
-    'fieldable' => TRUE,
-    // Mark this as a configuration entity type to prevent other modules from
-    // assuming they can do stuff with this entity type.
-    'configuration' => TRUE,
-    'bundle keys' => array(
-      'bundle' => 'machine_name',
-    ),
-    'entity keys' => array(
-      'id' => 'id',
-      'bundle' => 'type',
+  $info = array(
+    'multifield' => array(
+      'label' => t('Multifield'),
+      'bundle label' => t('Multifield type'),
+      'entity class' => 'Multifield',
+      'controller class' => 'MultifieldEntityController',
+      'base table' => NULL, // Needed to prevent PHP notices.
+      'revision table' => NULL, // Needed to prevent PHP notices.
+      'fieldable' => TRUE,
+      // Mark this as a configuration entity type to prevent other modules from
+      // assuming they can do stuff with this entity type.
+      'configuration' => TRUE,
+      'bundles' => array(),
+      'bundle keys' => array(
+        'bundle' => 'machine_name',
+      ),
+      'entity keys' => array(
+        'id' => 'id',
+        'bundle' => 'type',
+        // Mark this as a configuration entity type to prevent other modules from
+        // assuming they can do data stuff with this entity type.
+        'configuration' => TRUE,
+      ),
     ),
   );
 
