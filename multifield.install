@@ -63,6 +63,7 @@ function multifield_field_schema($field) {
   // Use the same query from multifield_type_get_subfields() but since
   // we want to ensure we're using the most current data, the function isn't
   // used.
+  module_load_include('module', 'multifield', 'multifield');
   $machine_name = multifield_extract_multifield_machine_name($field);
   $field_names = array();
   $config_names = config_get_names_with_prefix('field.instance.');
@@ -72,14 +73,14 @@ function multifield_field_schema($field) {
       $field_names[] = $field['field_name'];
     }
   }
-  
+
   if (empty($field_names)) {
     return $schema;
   }
 
   foreach ($field_names as $name) {
     $subfield_data = field_read_fields(array('field_name' => $name));
-    $subfields[$name] = reset($subfield_data);  
+    $subfields[$name] = reset($subfield_data);
   }
 
   foreach ($subfields as $field_name => $subfield) {
