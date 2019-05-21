@@ -13,18 +13,19 @@ This project seeks to provide a true compound field solution for Backdrop.
 
 ## Installation
 
- - Install this module using the official 
+ - Install this module using the official
   [Backdrop CMS instructions](https://backdropcms.org/guide/modules)
 
 ## Issues
 
-Bugs and Feature requests should be reported in the 
+Bugs and Feature requests should be reported in the
 [Issue Queue](https://github.com/backdrop-contrib/multifield/issues)
 
 ## Current Maintainers
 
  - [Laryn Kragt Bakker](https://github.com/laryn) - [CEDC.org](https://cedc.org)
- - Help welcome!
+ - [Jen Lampton](https://github.com/jenlampton)
+ - Additional co-maintainers welcome.
 
 ## Credits
 
@@ -33,5 +34,5 @@ Bugs and Feature requests should be reported in the
 
 ## License
 
-This project is GPL v2 software. See the [LICENSE.txt](https://github.com/backdrop-contrib/multifield/blob/1.x-1.x/LICENSE.txt) 
+This project is GPL v2 software. See the [LICENSE.txt](https://github.com/backdrop-contrib/multifield/blob/1.x-1.x/LICENSE.txt)
 file in this directory for complete text.
