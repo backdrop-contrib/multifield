@@ -126,8 +126,6 @@ function multifield_entity_info() {
     'label' => t('Multifield'),
     'entity class' => 'Multifield',
     'controller class' => 'MultifieldEntityController',
-    'base table' => 'multifield',
-    'revision table' => 'multifield',
     'fieldable' => TRUE,
     // Mark this as a configuration entity type to prevent other modules from
     // assuming they can do stuff with this entity type.
