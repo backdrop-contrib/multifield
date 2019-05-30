@@ -100,6 +100,9 @@ function multifield_menu() {
   return $info;
 }
 
+/**
+ * Access callback.
+ */
 function multifield_edit_access($multifield, $account = NULL) {
   return empty($multifield->locked) && user_access('administer multifield', $account);
 }
@@ -114,8 +117,148 @@ function multifield_menu_alter(&$items) {
   }
 }
 
+/**
+ * Title callback.
+ */
 function multifield_page_title($multifield) {
   return check_plain($multifield->label);
+}
+
+/**
+ * Implements hook_entity_insert().
+ *
+ * @todo remove after https://github.com/backdrop/backdrop-issues/issues/3552
+ */
+function multifield_entity_insert($entity, $type) {
+  $referenced_files_by_field = _multifield_get_file_ids_by_field($entity);
+  foreach ($referenced_files_by_field as $field => $fids) {
+    _filter_record_file_usage($fids, $entity);
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ *
+ * @todo remove after https://github.com/backdrop/backdrop-issues/issues/3552
+ */
+function multifield_entity_update($entity, $type) {
+  // On new revisions, all files are considered to be a new usage and no
+  // deletion of previous file usages are necessary.
+  $entity_info = entity_get_info($entity->entityType());
+  $vid_key = isset($entity_info['entity keys']['revision']) ? $entity_info['entity keys']['revision'] : NULL;
+  if (!empty($entity->original)) {
+    if ($vid_key && $entity->$vid_key != $entity->original->$vid_key) {
+      $referenced_files_by_field = _multifield_get_file_ids_by_field($entity);
+      foreach ($referenced_files_by_field as $field => $fids) {
+        _filter_record_file_usage($fids, $entity);
+      }
+    }
+
+    // On modified revisions, detect which file references have been added (and
+    // record their usage) and which ones have been removed (delete their usage).
+    // File references that existed both in the previous version of the revision
+    // and in the new one don't need their usage to be updated.
+    else {
+      $original_fids_by_field = _multifield_get_file_ids_by_field($entity->original);
+      $fids_by_field = _multifield_get_file_ids_by_field($entity);
+
+      // Detect file usages that should be incremented.
+      foreach ($fids_by_field as $field => $fids) {
+        $added_files = array_diff($fids_by_field[$field], $original_fids_by_field[$field]);
+        _filter_record_file_usage($added_files, $entity);
+      }
+
+      // Detect file usages that should be decremented.
+      foreach ($original_fids_by_field as $field => $fids) {
+        $removed_files = array_diff($original_fids_by_field[$field], $fids_by_field[$field]);
+        _filter_delete_file_usage($removed_files, $entity, 1);
+      }
+    }
+  }
+}
+
+/**
+ * Get file IDs to save for each field in the multifield.
+ *
+ * @param Entity $entity
+ *   The entity being saved.
+ *
+ * @return array
+ *   An array where the key is the field machine name and the value is an array
+ *   of file IDs, as follows:
+ *   array(
+ *     field_machine_name => array(
+ *       1,2,3,4
+ *     )
+ *   )
+ *
+ * @see _filter_get_file_ids_by_field().
+ */
+function _multifield_get_file_ids_by_field($entity) {
+  $fids = array();
+
+  $multifield_fields = _multifield_get_multifeld_fields($entity);
+  foreach ($multifield_fields as $multifield) {
+
+    // Create a list of subfields to check for FIDs.
+    $subfields = multifield_type_get_subfields($multifield);
+    foreach ($subfields as $key => $subfield) {
+      $subfield_info = field_info_instance('multifield', $subfield, $multifield);
+      if (!$subfield_info['settings']['text_processing']) {
+        unset($subfields[$key]);
+      }
+    }
+
+    $fids[$multifield] = array();
+
+    if (isset($entity->$multifield)) {
+      foreach ($entity->$multifield as $langcode => $values) {
+        foreach ($values as $delta => $fields) {
+          foreach ($fields as $machine_name => $field) {
+
+            // Only proceed for subfields worth checking...
+            if (in_array($machine_name, $subfields)) {
+              foreach ($field as $langcode2 => $values2) {
+                foreach ($values2 as $delta => $text) {
+                  if (isset($text['value'])) {
+                    $fids[$multifield] = array_merge($fids[$multifield], filter_parse_file_fids($text['value']));
+                  }
+                  if (isset($text['summary'])) {
+                    $fids[$multifield] = array_merge($fids[$multifield], filter_parse_file_fids($text['summary']));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    $fids[$multifield] = array_unique($fids[$multifield]);
+  }
+
+  return $fids;
+}
+
+/**
+ * Find the text fields within multifields.
+ *
+ * @param Entity $entity
+ *   The entity being saved.
+ *
+ * @return array
+ *   An array of machine names for fields that might contain FIDs.
+ *
+ * @see _filter_get_processed_text_fields().
+ */
+function _multifield_get_multifeld_fields($entity) {
+  $fields = field_info_instances($entity->entityType(), $entity->bundle());
+  $field_list = array();
+  foreach ($fields as $field) {
+    if ($field['widget']['module'] == 'multifield') {
+      $field_list[] = $field['field_name'];
+    }
+  }
+  return $field_list;
 }
 
 /**
@@ -158,15 +301,18 @@ function multifield_entity_info() {
   return $info;
 }
 
+/**
+ * @todo
+ */
 function multifield_load($name) {
   $result = multifield_load_all();
   return isset($result[$name]) ? $result[$name] : FALSE;
 }
 
+/**
+ * @todo
+ */
 function multifield_load_all() {
-  //ctools_include('export');
-  //$result = ctools_export_load_object('multifield');
-  //TODO: Move these ctools lines to core functionality if applicable
   $result = array();
   $fields = field_read_fields(array('type' => 'multifield'));
   foreach ($fields as $field) {
@@ -181,6 +327,9 @@ function multifield_load_all() {
   return $result;
 }
 
+/**
+ * @todo
+ */
 function multifield_save($multifield) {
   $return = NULL;
   module_invoke_all('multifield_presave', $multifield);
@@ -200,6 +349,9 @@ function multifield_save($multifield) {
   return $return;
 }
 
+/**
+ * @todo
+ */
 function multifield_delete($multifield) {
   module_invoke_all('multifield_delete', $multifield);
 
@@ -211,14 +363,18 @@ function multifield_delete($multifield) {
   multifield_cache_clear();
 }
 
+/**
+ * @todo
+ */
 function multifield_cache_clear() {
   field_info_cache_clear();
   backdrop_static_reset('multifield_get_fields');
   backdrop_static_reset('multifield_get_subfields');
-  //ctools_include('export');
-  //ctools_export_load_object_reset('multifield');
 }
 
+/**
+ * @todo
+ */
 function multifield_field_machine_name_exists($name) {
   return field_info_field_types($name) || multifield_load($name);
 }
@@ -427,6 +583,9 @@ function multifield_field_delete_instance($instance) {
   }
 }
 
+/**
+ * @todo
+ */
 function _multifield_update_field_schemas($machine_name) {
   foreach (multifield_type_get_fields($machine_name) as $field_name) {
     $field = field_read_field($field_name);
@@ -441,12 +600,18 @@ function _multifield_update_field_schemas($machine_name) {
   }
 }
 
+/**
+ * @todo
+ */
 function _multifield_field_item_to_entity($machine_name, array $item) {
   $pseudo_entity = (object) ($item + array('id' => NULL));
   $pseudo_entity->type = $machine_name;
   return $pseudo_entity;
 }
 
+/**
+ * @todo
+ */
 function _multifield_field_entity_to_item($pseudo_entity) {
   $item = (array) $pseudo_entity;
   unset($item['type']);
@@ -454,6 +619,9 @@ function _multifield_field_entity_to_item($pseudo_entity) {
   return $item;
 }
 
+/**
+ * @todo
+ */
 function multifield_item_unserialize(&$item, $delta, $machine_name) {
   foreach (multifield_type_get_subfields($machine_name) as $subfield_name) {
     $subfield = field_info_field($subfield_name);
@@ -466,6 +634,9 @@ function multifield_item_unserialize(&$item, $delta, $machine_name) {
   }
 }
 
+/**
+ * @todo
+ */
 function multifield_item_serialize(&$item, $delta, $machine_name) {
   // Serialize the multifield values into separate columns for saving into the
   // field table.
@@ -492,11 +663,17 @@ function multifield_item_serialize(&$item, $delta, $machine_name) {
   }
 }
 
+/**
+ * @todo
+ */
 function multifield_get_next_id() {
   $id = &multifield_get_maximum_id();
   return ++$id;
 }
 
+/**
+ * @todo
+ */
 function &multifield_get_maximum_id() {
   $id = &backdrop_static(__FUNCTION__);
   if (!isset($id)) {
@@ -505,6 +682,9 @@ function &multifield_get_maximum_id() {
   return $id;
 }
 
+/**
+ * @todo
+ */
 function multifield_update_maximum_id(array $items) {
   if (!empty($items)) {
     $max_id = &multifield_get_maximum_id();
@@ -532,6 +712,9 @@ function _multifield_generate_unique_id() {
   return $id;
 }
 
+/**
+ * @todo
+ */
 function multifield_items_extract_ids(array $items) {
   $ids = array();
   foreach ($items as $item) {
@@ -617,6 +800,9 @@ function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
   }
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function multifield_form_field_ui_field_settings_form_alter(&$form, &$form_state) {
   $instance = $form_state['build_info']['args'][0];
   $field = field_info_field($instance['field_name']);
@@ -636,6 +822,9 @@ function multifield_form_field_ui_field_settings_form_alter(&$form, &$form_state
   }
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function multifield_form_field_ui_field_delete_form_alter(&$form, &$form_state) {
   $instance = $form_state['build_info']['args'][0];
   if ($instance['entity_type'] == 'multifield' && multifield_type_has_data($instance['bundle'])) {
@@ -678,6 +867,9 @@ function multifield_extract_multifield_machine_name(array $field) {
   }
 }
 
+/**
+ * @todo
+ */
 function _multifield_warn_no_subfields($field) {
   if ($machine_name = multifield_extract_multifield_machine_name($field)) {
     if (!multifield_type_has_subfields($machine_name) && module_exists('field_ui') && user_access('administer multifield')) {
