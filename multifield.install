@@ -1,58 +1,8 @@
 <?php
-
 /**
- * Implements hook_schema().
+ * @file
+ * Install, uninstall, and update functions.
  */
-function multifield_schema() {
-  $schema['multifield'] = array(
-    'description' => '',
-    'fields' => array(
-      'mfid' => array(
-        'description' => 'Primary ID field for the table. Not used for anything except internal lookups.',
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'no export' => TRUE,
-      ),
-      'machine_name' => array(
-        'type' => 'varchar',
-        'length' => 128,
-        'default' => '',
-        'not null' => TRUE,
-      ),
-      'label' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'default' => '',
-        'not null' => TRUE,
-      ),
-      'description' => array(
-        'type' => 'text',
-        'not null' => TRUE,
-        'size' => 'big',
-        'description' => 'Description of the multifield.',
-      ),
-    ),
-    'primary key' => array('mfid'),
-    'unique keys' => array(
-      'machine_name' => array('machine_name'),
-    ),
-    'export' => array(
-      'key' => 'machine_name',
-      'key name' => 'Machine name',
-      'primary key' => 'mfid',
-      'identifier' => 'multifield',
-      'default hook' => 'multifield_default_multifield',
-      'cache defaults' => TRUE,
-      'load callback' => 'multifield_load',
-      'load all callback' => 'multifield_load_all',
-      'save callback' => 'multifield_save',
-      'delete callback' => 'multifield_delete',
-    ),
-  );
-
-  return $schema;
-}
 
 /**
  * Implements hook_field_schema().
@@ -72,14 +22,14 @@ function multifield_field_schema($field) {
       $field_names[] = $field['field_name'];
     }
   }
-  
+
   if (empty($field_names)) {
     return $schema;
   }
 
   foreach ($field_names as $name) {
     $subfield_data = field_read_fields(array('field_name' => $name));
-    $subfields[$name] = reset($subfield_data);  
+    $subfields[$name] = reset($subfield_data);
   }
 
   foreach ($subfields as $field_name => $subfield) {
@@ -135,4 +85,13 @@ function multifield_field_schema($field) {
  */
 function multifield_update_last_removed() {
   return 7101;
+}
+
+/**
+ * Delete the empty multifield database table.
+ */
+function multifield_update_1000() {
+  if (db_table_exists('multifield')) {
+    db_drop_table('multifield');
+  }
 }
