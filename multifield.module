@@ -324,8 +324,6 @@ function multifield_load_all() {
     $result[$multifield->machine_name] = $multifield;
   }
 
-  dpm($result);
-
   return $result;
 }
 
