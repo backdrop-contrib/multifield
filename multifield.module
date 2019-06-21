@@ -204,7 +204,7 @@ function _multifield_get_file_ids_by_field($entity) {
     $subfields = multifield_type_get_subfields($multifield);
     foreach ($subfields as $key => $subfield) {
       $subfield_info = field_info_instance('multifield', $subfield, $multifield);
-      if (!$subfield_info['settings']['text_processing']) {
+      if (!isset($subfield_info['settings']['text_processing']) || !$subfield_info['settings']['text_processing']) {
         unset($subfields[$key]);
       }
     }
@@ -269,6 +269,8 @@ function multifield_entity_info() {
     'label' => t('Multifield'),
     'entity class' => 'Multifield',
     'controller class' => 'MultifieldEntityController',
+    'base table' => NULL, // Needed to prevent PHP notices.
+    'revision table' => NULL, // Needed to prevent PHP notices.
     'fieldable' => TRUE,
     // Mark this as a configuration entity type to prevent other modules from
     // assuming they can do stuff with this entity type.
@@ -321,6 +323,8 @@ function multifield_load_all() {
     $multifield->locked = TRUE;
     $result[$multifield->machine_name] = $multifield;
   }
+
+  dpm($result);
 
   return $result;
 }
