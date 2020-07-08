@@ -185,3 +185,39 @@ class MultifieldEntityController extends DefaultEntityController {
     $this->entityCache += $entities;
   }
 }
+
+/**
+ * Defines a psuedo entity.
+ */
+class MultifieldPsuedoEntity extends Entity {
+
+  /**
+   * Implements EntityInterface::id().
+   */
+  public function id() {
+    return $this->id;
+  }
+
+  /**
+   * Implements EntityInterface::label().
+   */
+  public function label() {
+    return t('Psuedoentity');
+  }
+
+  /**
+   * Implements EntityInterface::entityType().
+   */
+  public function entityType() {
+    return 'multifieldpsuedoentity';
+  }
+
+  /**
+   * Implements EntityInterface::uri()
+   */
+  public function uri() {
+    return array(
+      // This may not be allowed. Trying anyway.
+    );
+  }
+}
