@@ -925,6 +925,7 @@ function _multifield_entity_multifields_pseudo_entities_module_invoke($entity_ty
           $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
           // Add the original item value to the pseudo-entity.
+          $pseudo_entity->original = FALSE;
           if (!empty($original_items[$delta])) {
             $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
           }

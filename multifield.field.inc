@@ -218,7 +218,7 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
   $original_items = !empty($entity->original->{$field['field_name']}[$langcode]) ? $entity->original->{$field['field_name']}[$langcode] : array();
 
   foreach ($items as $delta => $item) {
-    // If an ID is not yes assigned, add one, unless this hook is invoked
+    // If an ID is not yet assigned, add one, unless this hook is invoked
     // from the default value widget on the field instance (empty $entity).
     // If this is a new or cloned entity, ensure that the internal ID values
     // are reset.
@@ -236,9 +236,11 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
     // Add the original item value to the pseudo-entity.
+    $pseudo_entity->original = FALSE;
     if (!empty($original_items[$delta])) {
       $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
     }
+
     // Ensure the revision flag is set.
     if (!empty($entity->revision)) {
       $pseudo_entity->revision = TRUE;
@@ -282,7 +284,6 @@ function multifield_field_attach_submit($entity_type, $entity, $form, &$form_sta
       foreach ($entity->{$field_name} as $langcode => &$items) {
         foreach ($items as $delta => &$item) {
           $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
-          // @todo Ensure that $pseudo_entity->original is available.
 
           // Run each sub-field through hook_field_submit().
           _multifield_field_invoke_default('submit', $machine_name, 'multifield', $pseudo_entity, $langcode, $form, $form_state);
@@ -383,6 +384,7 @@ function multifield_field_update($entity_type, $entity, $field, $instance, $lang
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
     // Add the original item value to the pseudo-entity.
+    $pseudo_entity->original = FALSE;
     if (!empty($original_items[$delta])) {
       $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
     }
