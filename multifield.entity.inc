@@ -202,6 +202,7 @@ class MultifieldPsuedoEntity extends Entity {
    * Implements EntityInterface::label().
    */
   public function label() {
+    // @todo retrieve the parent entity label.
     return t('Psuedoentity');
   }
 
