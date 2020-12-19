@@ -922,11 +922,13 @@ function _multifield_entity_multifields_pseudo_entities_module_invoke($entity_ty
         $original_items = !empty($entity->original->{$field_name}[$langcode]) ? $entity->original->{$field_name}[$langcode] : array();
 
         foreach ($items as $delta => &$item) {
+          $item['parent'] = $entity;
           $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
           // Add the original item value to the pseudo-entity.
           $pseudo_entity->original = FALSE;
           if (!empty($original_items[$delta])) {
+            $original_items[$delta]['parent'] = $entity;
             $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
           }
 
