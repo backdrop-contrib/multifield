@@ -756,7 +756,7 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
   }
 
   // If this is a field attached to a multifield type that has instances, then
-  // preven changes being made to it so that it will not change field schema.
+  // prevent changes being made to it so that it will not change field schema.
   if (multifield_type_has_data($form['#bundle'])) {
     backdrop_set_message(t('Because the multifield already has data, some subfield settings can no longer be changed.'), 'warning');
     //$form['fields']['_add_new_field']['#access'] = FALSE;
@@ -771,7 +771,7 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for field_ui_field_edit_form().
+ * Implements hook_form_FORM_ID_alter() for field_ui_field_edit_form.
  */
 function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
   _multifield_warn_no_subfields($form['#field']);
@@ -809,7 +809,7 @@ function multifield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter().
+ * Implements hook_form_FORM_ID_alter() for field_ui_field_settings_form.
  */
 function multifield_form_field_ui_field_settings_form_alter(&$form, &$form_state) {
   $instance = $form_state['build_info']['args'][0];
