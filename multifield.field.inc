@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Field integration for the Multifield module.
@@ -104,6 +103,7 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
   $pseudo_entities = array();
   foreach ($entities as $id => $entity) {
     foreach ($items[$id] as $delta => $item) {
+      $item['parent'] = $entity;
       $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
       $pseudo_entity->delta = $delta;
       $pseudo_entity->parent_id = $id;
@@ -148,6 +148,7 @@ function multifield_field_access($op, $field, $entity_type, $entity, $account) {
 
     if (!empty($entity) && $items = field_get_items($entity_type, $entity, $field['field_name'])) {
       foreach ($items as $delta => $item) {
+        $item['parent'] = $entity;
         $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
         foreach ($subfield_names as $subfield_name) {
           $subfield = field_info_field($subfield_name);
@@ -176,6 +177,7 @@ function multifield_field_validate($entity_type, $entity, $field, $instance, $la
   $machine_name = multifield_extract_multifield_machine_name($field);
 
   foreach ($items as $delta => $item) {
+    //$item['parent'] = $entity;
     //$pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
     //_multifield_field_attach_form_validate('multifield', $pseudo_entity);
     //$items[$delta] = _multifield_field_entity_to_item($pseudo_entity);
@@ -233,11 +235,13 @@ function multifield_field_presave($entity_type, $entity, $field, $instance, $lan
       $item['id'] = multifield_get_next_id();
     }
 
+    $item['parent'] = $entity;
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
     // Add the original item value to the pseudo-entity.
     $pseudo_entity->original = FALSE;
     if (!empty($original_items[$delta])) {
+      $original_items[$delta]['parent'] = $entity;
       $pseudo_entity->original = _multifield_field_item_to_entity($machine_name, $original_items[$delta]);
     }
 
@@ -283,6 +287,7 @@ function multifield_field_attach_submit($entity_type, $entity, $form, &$form_sta
     if (!empty($entity->{$field_name})) {
       foreach ($entity->{$field_name} as $langcode => &$items) {
         foreach ($items as $delta => &$item) {
+          $item['parent'] = $entity;
           $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
           // Run each sub-field through hook_field_submit().
@@ -334,6 +339,7 @@ function multifield_field_insert($entity_type, $entity, $field, $instance, $lang
 
   // Run each sub-field through hook_field_insert().
   foreach ($items as $delta => $item) {
+    $item['parent'] = $entity;
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
     // Run each sub-field through hook_field_insert().
@@ -381,6 +387,7 @@ function multifield_field_update($entity_type, $entity, $field, $instance, $lang
   $original_items = !empty($entity->original->{$field['field_name']}[$langcode]) ? $entity->original->{$field['field_name']}[$langcode] : array();
 
   foreach ($items as $delta => $item) {
+    $item['parent'] = $entity;
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
     // Add the original item value to the pseudo-entity.
@@ -435,6 +442,7 @@ function multifield_field_delete_revision($entity_type, $entity, $field, $instan
   $machine_name = multifield_extract_multifield_machine_name($field);
 
   foreach ($items as $delta => $item) {
+    $item['parent'] = $entity;
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
     // Run each sub-field through hook_field_delete_revision().
@@ -464,6 +472,7 @@ function multifield_field_delete($entity_type, $entity, $field, $instance, $lang
   $machine_name = multifield_extract_multifield_machine_name($field);
 
   foreach ($items as $delta => $item) {
+    $item['parent'] = $entity;
     $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
 
     // Run each sub-field through hook_field_delete().
@@ -568,6 +577,7 @@ function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $
 
   // Force the ID of the pseudo entity to be NULL, to prevent modules like
   // entity reference from trying to use it.
+  $item['parent'] = $entity;
   $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
   $pseudo_entity->id = NULL;
 
@@ -882,6 +892,7 @@ function multifield_field_prepare_view($entity_type, $entities, $field, $instanc
     if (!$instance_display['type'] !== 'hidden') {
       $view_mode = !empty($display['settings']['view_mode']) ? $display['settings']['view_mode'] : 'default';
       foreach ($items[$id] as $delta => $item) {
+        $item['parent'] = $entity;
         $pseudo_entity = _multifield_field_item_to_entity($machine_name, $item);
         $pseudo_entity->delta = $delta;
         $pseudo_entity->parent_id = $id;
