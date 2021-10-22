@@ -65,8 +65,13 @@ function multifield_list_page() {
         'href' => $base . '/delete',
       );
     }
+
     if (!empty($operations)) {
-      $row['data'][] = theme('links', array('links' => $operations, 'attributes' => array('class' => array('links', 'inline', 'nowrap'))));
+      $dropbuttons = array(
+        '#type' => 'dropbutton',
+        '#links' => $operations,
+      );
+      $row['data'][] = backdrop_render($dropbuttons);
     }
     else {
       $row['data'][] = '';
