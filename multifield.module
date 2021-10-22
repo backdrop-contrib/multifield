@@ -285,9 +285,6 @@ function multifield_entity_info() {
       'entity keys' => array(
         'id' => 'id',
         'bundle' => 'type',
-        // Mark this as a configuration entity type to prevent other modules from
-        // assuming they can do data stuff with this entity type.
-        'configuration' => TRUE,
       ),
     ),
   );
