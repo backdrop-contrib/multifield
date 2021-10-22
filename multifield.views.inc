@@ -56,20 +56,24 @@ function multifield_field_views_data($field) {
               $table[$f_data['field']['additional fields'][$index]]['field']['subfield handler'] = $f_data['field']['handler'];
             }
             foreach (array('argument', 'filter', 'sort') as $handler) {
+              $subfield_data_table = 'field_data_' . $subfield_name;
               if (isset($subfield_data['field_data_' . $subfield_name][$source_field][$handler]) && isset($table[$f_data['field']['additional fields'][$index]][$handler])) {
                 // Overwrite subfield group and title short values.
-                $table[$field_name.'_'.$subfield_name.'_value']['group'] = 'Multifield';
-                $table[$field_name.'_'.$subfield_name.'_value']['title short'] = $table[$field_name]['title'].':'.$table[$field_name.'_'.$subfield_name.'_value'][$handler]['field_name'];
+                $subfield_value_key = $field_name . '_' . $subfield_name . '_value';
+                $table[$subfield_value_key]['group'] = 'Multifield';
+                if (isset($table[$subfield_value_key][$handler])) {
+                  $table[$subfield_value_key]['title short'] = $table[$field_name]['title'] . ':' . $table[$subfield_value_key][$handler]['field_name'];
+                }
                 // Overwrite field_name.
-                $table[$f_data['field']['additional fields'][$index]][$handler]['field_name'] = $subfield_data['field_data_' . $subfield_name][$source_field]['title short'];
+                $table[$f_data['field']['additional fields'][$index]][$handler]['field_name'] = $subfield_data[$subfield_data_table][$source_field]['title short'];
                 // Overwrite handler.
-                $table[$f_data['field']['additional fields'][$index]][$handler]['handler'] = $subfield_data['field_data_' . $subfield_name][$source_field][$handler]['handler'];
+                $table[$f_data['field']['additional fields'][$index]][$handler]['handler'] = $subfield_data[$subfield_data_table][$source_field][$handler]['handler'];
                 // Add additional options without overwriting table etc.
-                $table[$f_data['field']['additional fields'][$index]][$handler] += $subfield_data['field_data_' . $subfield_name][$source_field][$handler];
+                $table[$f_data['field']['additional fields'][$index]][$handler] += $subfield_data[$subfield_data_table][$source_field][$handler];
               }
             }
-            if (isset($subfield_data['field_data_' . $subfield_name][$source_field]['relationship'])) {
-              $table[$f_data['field']['additional fields'][$index]]['relationship'] = $subfield_data['field_data_' . $subfield_name][$source_field]['relationship'];
+            if (isset($subfield_data[$subfield_data_table][$source_field]['relationship'])) {
+              $table[$f_data['field']['additional fields'][$index]]['relationship'] = $subfield_data[$subfield_data_table][$source_field]['relationship'];
             }
           }
         }
