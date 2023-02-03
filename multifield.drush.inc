@@ -16,7 +16,7 @@ function multifield_drush_command() {
       'target-field-name' => 'The new field name to use. Defaults to the existing field name.',
     ),
     'required arguments' => TRUE,
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+    'bootstrap' => DRUSH_BOOTSTRAP_BACKDROP_FULL,
   );
 
   return $commands;
