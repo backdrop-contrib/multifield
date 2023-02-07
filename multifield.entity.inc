@@ -164,7 +164,7 @@ class MultifieldEntityController extends DefaultEntityController {
           // Simply doing an entity load on the entities with multifield values
           // will cause the cacheSet() from multifield_field_load() to get
           // invoked.
-          $entities = entity_load($entity_type, array_keys($entities));
+          $entities = entity_load_multiple($entity_type, array_keys($entities));
           foreach ($entities as $entity) {
             if ($items = field_get_items($entity_type, $entity, $field_name)) {
               foreach ($items as $item) {
