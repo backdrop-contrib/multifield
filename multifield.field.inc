@@ -493,7 +493,7 @@ function multifield_field_delete($entity_type, $entity, $field, $instance, $lang
     $query->condition('revision.' . $id_key, $entity_id);
     $revision_ids = $query->execute()->fetchCol();
     foreach ($revision_ids as $revision_id) {
-      if ($revisions = entity_load($entity_type, array($entity_id), array($revision_key => $revision_id))) {
+      if ($revisions = entity_load_multiple($entity_type, array($entity_id), array($revision_key => $revision_id))) {
         $revision = reset($revisions);
         if (!empty($revision->{$field['field_name']})) {
           foreach ($revision->{$field['field_name']} as $revision_langcode => $revision_items) {
