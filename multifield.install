@@ -9,19 +9,10 @@
  */
 function multifield_field_schema($field) {
   $schema = array();
-
-  // Use the same query from multifield_type_get_subfields() but since
-  // we want to ensure we're using the most current data, the function isn't
-  // used.
   $machine_name = multifield_extract_multifield_machine_name($field);
-  $field_names = array();
-  $config_names = config_get_names_with_prefix('field.instance.');
-  foreach ($config_names as $config_name) {
-    $field = config_get($config_name);
-    if ($field['bundle'] == $machine_name && $field['entity_type'] == 'multifield') {
-      $field_names[] = $field['field_name'];
-    }
-  }
+  require_once drupal_get_path('module', 'multifield') . '/multifield.module';
+
+  $field_names = multifield_type_get_subfields($machine_name);
 
   if (empty($field_names)) {
     return $schema;
