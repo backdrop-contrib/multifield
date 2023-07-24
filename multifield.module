@@ -466,12 +466,10 @@ function multifield_get_subfields() {
       $config_names = config_get_names_with_prefix('field.instance.multifield.');
       foreach ($config_names as $config_name) {
         $field = config_get($config_name);
-        if ($field['entity_type'] == 'multifield') {
-          $result = new Multifield();
-          $result->bundle = $field['bundle'];
-          $result->field_name = $field['field_name'];
-          $results[] = $result;
-        }
+        $result = new Multifield();
+        $result->bundle = $field['bundle'];
+        $result->field_name = $field['field_name'];
+        $results[] = $result;
       }
 
       foreach ($results as $result) {
