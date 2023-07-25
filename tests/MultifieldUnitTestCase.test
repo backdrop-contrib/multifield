@@ -413,7 +413,7 @@ class MultifieldUnitTestCase extends MultifieldTestBase {
 
   public function testEntityLoad() {
     try {
-      entity_load('multifield', FALSE, array('type' => 'test'));
+      entity_load_multiple('multifield', FALSE, array('type' => 'test'));
       $this->fail("Cannot run entity_load('multifield') with conditions.");
     }
     catch (InvalidArgumentException $e) {
