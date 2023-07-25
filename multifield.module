@@ -112,7 +112,7 @@ function multifield_edit_access($multifield, $account = NULL) {
  * Implements hook_menu_alter().
  */
 function multifield_menu_alter(&$items) {
-  // Change the Field UI title of 'Manage fields' to 'Manage subfields'
+  // Change the Field UI title of 'Manage fields' to 'Manage subfields'.
   if (isset($items['admin/structure/multifield/manage/%multifield/fields'])) {
     $items['admin/structure/multifield/manage/%multifield/fields']['title'] = 'Manage subfields';
   }
@@ -193,7 +193,7 @@ function multifield_entity_update($entity, $type) {
  *     )
  *   )
  *
- * @see _filter_get_file_ids_by_field().
+ * @see _filter_get_file_ids_by_field()
  */
 function _multifield_get_file_ids_by_field($entity) {
   $fids = array();
@@ -249,7 +249,7 @@ function _multifield_get_file_ids_by_field($entity) {
  * @return array
  *   An array of machine names for fields that might contain FIDs.
  *
- * @see _filter_get_processed_text_fields().
+ * @see _filter_get_processed_text_fields()
  */
 function _multifield_get_multifeld_fields($entity) {
   $fields = field_info_instances($entity->entityType(), $entity->bundle());
@@ -463,15 +463,13 @@ function multifield_get_subfields() {
     else {
       $subfields = array();
       $results = array();
-      $config_names = config_get_names_with_prefix('field.instance.');
+      $config_names = config_get_names_with_prefix('field.instance.multifield.');
       foreach ($config_names as $config_name) {
         $field = config_get($config_name);
-        if ($field['entity_type'] == 'multifield') {
-          $result = new Multifield();
-          $result->bundle = $field['bundle'];
-          $result->field_name = $field['field_name'];
-          $results[] = $result;
-        }
+        $result = new Multifield();
+        $result->bundle = $field['bundle'];
+        $result->field_name = $field['field_name'];
+        $results[] = $result;
       }
 
       foreach ($results as $result) {
@@ -515,6 +513,9 @@ function multifield_type_get_subfields($machine_name) {
   return isset($subfields[$machine_name]) ? $subfields[$machine_name] : array();
 }
 
+/**
+ *
+ */
 function multifield_type_has_data($machine_name) {
   foreach (multifield_type_get_fields($machine_name) as $field_name) {
     $field = field_info_field($field_name);
@@ -620,7 +621,7 @@ function _multifield_field_item_to_entity($machine_name, array $item) {
 function _multifield_field_entity_to_item($pseudo_entity) {
   $item = (array) $pseudo_entity;
   unset($item['type']);
-  //$item['#pseudo_entity'] = $pseudo_entity;
+  // $item['#pseudo_entity'] = $pseudo_entity;
   return $item;
 }
 
@@ -705,7 +706,9 @@ function multifield_update_maximum_id(array $items) {
   }
 }
 
-// @todo Remove this function?
+/**
+ *@todo Remove this function?
+ */
 function _multifield_generate_unique_id() {
   $seen_ids = &backdrop_static(__FUNCTION__, array());
   do {
@@ -756,8 +759,8 @@ function multifield_form_field_ui_field_overview_form_alter(&$form, &$form_state
   // prevent changes being made to it so that it will not change field schema.
   if (multifield_type_has_data($form['#bundle'])) {
     backdrop_set_message(t('Because the multifield already has data, some subfield settings can no longer be changed.'), 'warning');
-    //$form['fields']['_add_new_field']['#access'] = FALSE;
-    //$form['fields']['_add_existing_field']['#access'] = FALSE;
+    // $form['fields']['_add_new_field']['#access'] = FALSE;
+    // $form['fields']['_add_existing_field']['#access'] = FALSE;
     unset($form['fields']['_add_new_field']);
     unset($form['fields']['_add_existing_field']);
     unset($form['fields']['#regions']['add_new']);
