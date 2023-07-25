@@ -12,7 +12,7 @@ function multifield_feeds_processor_targets_alter(&$targets, $entity_type, $bund
     $info = field_info_field($name);
     if ($info['type'] == 'multifield') {
       foreach ($info['columns'] as $sub_field => $schema_info) {
-        $name_label = $instance['label'] . ': ' . drupal_ucfirst(str_replace('_', ' ', $sub_field));
+        $name_label = $instance['label'] . ': ' . backdrop_ucfirst(str_replace('_', ' ', $sub_field));
         $targets[$name . ':' . $sub_field] = array(
           'name' => $name_label,
           'callback' => 'multifield_set_target',
