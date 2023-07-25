@@ -187,9 +187,9 @@ class MultifieldEntityController extends DefaultEntityController {
 }
 
 /**
- * Defines a psuedo entity.
+ * Defines a pseudo entity.
  */
-class MultifieldPsuedoEntity extends Entity {
+class MultifieldPseudoEntity extends Entity {
 
   /**
    * Implements EntityInterface::id().
@@ -203,14 +203,14 @@ class MultifieldPsuedoEntity extends Entity {
    */
   public function label() {
     // @todo retrieve the parent entity label.
-    return t('Psuedoentity');
+    return t('Pseudoentity');
   }
 
   /**
    * Implements EntityInterface::entityType().
    */
   public function entityType() {
-    return 'multifieldpsuedoentity';
+    return 'multifieldpseudoentity';
   }
 
   /**
