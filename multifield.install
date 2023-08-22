@@ -10,7 +10,7 @@
 function multifield_field_schema($field) {
   $schema = array();
   $machine_name = multifield_extract_multifield_machine_name($field);
-  require_once drupal_get_path('module', 'multifield') . '/multifield.module';
+  require_once backdrop_get_path('module', 'multifield') . '/multifield.module';
 
   $field_names = multifield_type_get_subfields($machine_name);
 
