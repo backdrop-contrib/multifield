@@ -554,9 +554,13 @@ function multifield_field_attach_form($entity_type, $entity, &$form, &$form_stat
  */
 function multifield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $machine_name = multifield_extract_multifield_machine_name($field);
-  $item = isset($items[$delta]) ? $items[$delta] : array();
   $entity = $element['#entity'];
   $is_default_value_widget = empty($entity);
+
+  $item = isset($items[$delta]) ? $items[$delta] : array();
+  if (isset($form_state['storage']['rebuild_multifield']) && ($form_state['storage']['rebuild_multifield'] == $machine_name)) {
+    $item = $form_state['input'][$machine_name][$langcode];
+  }
 
   if ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED && !empty($field['settings']['hide_blank_items'])) {
     $field_state = field_form_get_state($element['#field_parents'], $element['#field_name'], $element['#language'], $form_state);
@@ -807,6 +811,7 @@ function multifield_field_widget_remove_item_submit($form, &$form_state) {
   backdrop_array_set_nested_value($form_state['input'], $address, $input);
   field_form_set_state($parents, $field_name, $langcode, $form_state, $field_state);
 
+  $form_state['storage']['rebuild_multifield'] = $field_name;
   $form_state['rebuild'] = TRUE;
 }
 
