@@ -4,28 +4,7 @@ package = Fields
 backdrop = 1.x
 type = module
 
-;dependencies[] = ctools
 dependencies[] = field
-configure = admin/structure/multifield
+dependencies[] = system (>=1.33)
 
-;files[] = tests/MultifieldAdministrationTestCase.test
-;files[] = tests/MultifieldCommerceIntegrationTest.test
-;files[] = tests/MultifieldDevelGenerateTestCase.test
-;files[] = tests/MultifieldEntityTranslationTestCase.test
-;files[] = tests/MultifieldFileUsageTestCase.test
-;files[] = tests/MultifieldNodeCloneIntegrationTest.test
-;files[] = tests/MultifieldReplicateIntegrationTest.test
-;files[] = tests/MultifieldTestBase.test
-;files[] = tests/MultifieldUnitTestCase.test
-;test_dependencies[] = addressfield
-;test_dependencies[] = clone
-;test_dependencies[] = commerce
-;test_dependencies[] = date
-;test_dependencies[] = devel
-;test_dependencies[] = diff
-;test_dependencies[] = email
-;test_dependencies[] = entityreference
-;test_dependencies[] = entity_translation
-;test_dependencies[] = field_collection
-;test_dependencies[] = replicate
-;test_dependencies[] = url
+configure = admin/structure/multifield
