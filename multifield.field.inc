@@ -94,7 +94,7 @@ function multifield_field_load($entity_type, $entities, $field, $instances, $lan
     foreach (array_keys($entities) as $id) {
       foreach ($items[$id] as $delta => $item) {
         if (!empty($item[$subfield_name][LANGUAGE_NONE])) {
-          $items[$id][$delta][$subfield_name][LANGUAGE_NONE] = _field_filter_items($subfield, $item[$subfield_name][LANGUAGE_NONE]);
+          $items[$id][$delta][$subfield_name][LANGUAGE_NONE] = _field_filter_items($subfield, $item[$subfield_name][LANGUAGE_NONE], $instances[$id]);
         }
       }
     }
@@ -316,7 +316,7 @@ function multifield_field_is_empty($item, $field) {
     if (!empty($item[$subfield_name])) {
       $subfield = field_info_field($subfield_name);
       foreach ($item[$subfield_name] as $langcode => $subfield_items) {
-        $item[$subfield_name][$langcode] = _field_filter_items($subfield, $subfield_items);
+        $item[$subfield_name][$langcode] = _field_filter_items($subfield, $subfield_items, $subinstance);
       }
       $item[$subfield_name] = array_filter($item[$subfield_name]);
     }
