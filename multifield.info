@@ -5,6 +5,5 @@ backdrop = 1.x
 type = module
 
 dependencies[] = field
-dependencies[] = system (>=1.33)
 
 configure = admin/structure/multifield
